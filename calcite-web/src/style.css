@@ -1,11 +1,13 @@
+/* Everforest 配色版 style.css */
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: #d3c6aa;               /* Everforest 主文本色 */
+  background-color: #272e33;    /* Everforest 深背景 */
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,13 +15,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* 链接：使用 Everforest 蓝色 */
 a {
   font-weight: 500;
-  color: #646cff;
+  color: #7fbbb3;
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: #a7c080;               /* 悬停用绿色 */
 }
 
 body {
@@ -35,23 +38,25 @@ h1 {
   line-height: 1.1;
 }
 
+/* 按钮：背景用深灰，边框用 Everforest 灰，悬停用绿色 */
 button {
   border-radius: 8px;
-  border: 1px solid transparent;
+  border: 1px solid #7a8478;
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #414b50;    /* 按钮背景 */
+  color: #d3c6aa;
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: #a7c080;
 }
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 4px auto #a7c080;
 }
 
 .card {
@@ -65,15 +70,26 @@ button:focus-visible {
   text-align: center;
 }
 
+/* 浅色模式 */
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
+    color: #5c6a72;             /* 主文本 */
+    background-color: #fdf6e3;  /* 浅背景 */
+  }
+
+  a {
+    color: #7fbbb3;
   }
   a:hover {
-    color: #747bff;
+    color: #a7c080;
   }
+
   button {
-    background-color: #f9f9f9;
+    background-color: #f3e7c8;  /* 浅按钮背景 */
+    color: #5c6a72;
+    border-color: #a7c080;
+  }
+  button:hover {
+    border-color: #e69875;      /* 悬停用橙色 */
   }
 }
