@@ -112,6 +112,7 @@ Header: Authorization: Bearer your_jwt_token
 }
 ```
 
+----
 
 ### 3. 笔记管理 API（核心）
 
@@ -124,6 +125,140 @@ Header: Authorization: Bearer your_jwt_token
 | /api/note/detail | GET  | 获取笔记详情 |
 | /api/note/search | GET  | 全文搜索   |
 
+#### 3.1 创建笔记 POST /api/note/create
+
+**请求示例：**
+```json
+{
+  "title": "我的第一篇笔记",
+  "content": "这是一篇测试笔记内容...",
+  "summary": "笔记摘要",
+  "folder_id": 1
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "创建笔记成功",
+  "data": {
+    "note_id": 1
+  }
+}
+```
+
+#### 3.2 更新笔记 POST /api/note/update
+
+**请求示例：**
+```json
+{
+  "note_id": 1,
+  "title": "更新后的标题",
+  "content": "更新后的内容",
+  "summary": "更新后的摘要",
+  "folder_id": 2
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "更新笔记成功",
+  "data": {}
+}
+```
+
+#### 3.3 删除笔记 POST /api/note/delete
+
+**请求示例：**
+```json
+{
+  "note_id": 1
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "删除笔记成功",
+  "data": {}
+}
+```
+
+#### 3.4 获取笔记列表 GET /api/note/list
+
+**请求参数：**
+- `folder_id` (可选): 文件夹ID，0 表示所有笔记，-1 表示未分类笔记
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "获取笔记列表成功",
+  "data": [
+    {
+      "id": 1,
+      "title": "我的第一篇笔记",
+      "summary": "笔记摘要",
+      "folder_id": 1,
+      "created_at": "2025-01-01 12:00:00",
+      "updated_at": "2025-01-01 12:00:00"
+    }
+  ]
+}
+```
+> 注：列表响应不包含 `content` 字段以减少网络流量，完整内容需调用 `/api/note/detail` 获取
+
+#### 3.5 获取笔记详情 GET /api/note/detail
+
+**请求参数：**
+- `note_id` (必填): 笔记ID
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "获取笔记详情成功",
+  "data": {
+    "id": 1,
+    "title": "我的第一篇笔记",
+    "content": "笔记内容...",
+    "summary": "笔记摘要",
+    "folder_id": 1,
+    "created_at": "2025-01-01 12:00:00",
+    "updated_at": "2025-01-01 12:00:00"
+  }
+}
+```
+
+#### 3.6 全文搜索笔记 GET /api/note/search
+
+**请求参数：**
+- `keyword` (必填): 搜索关键词
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "搜索成功",
+  "data": [
+    {
+      "id": 1,
+      "title": "我的第一篇笔记",
+      "summary": "笔记摘要",
+      "folder_id": 1,
+      "created_at": "2025-01-01 12:00:00",
+      "updated_at": "2025-01-01 12:00:00"
+    }
+  ]
+}
+```
+> 注：搜索响应不包含 `content` 字段以减少网络流量
+
+----
 
 ### 4. 标签与分类 API
 

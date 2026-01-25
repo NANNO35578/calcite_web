@@ -154,9 +154,9 @@ const goToLogin = () => {
   align-items: center;
   min-height: 100vh;
   background: #272e33;
-  background-image: 
+  /* background-image: 
     radial-gradient(circle at 20% 50%, rgba(127, 187, 179, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(167, 192, 128, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 80% 80%, rgba(167, 192, 128, 0.1) 0%, transparent 50%); */
 }
 
 .register-card {
