@@ -1,72 +1,59 @@
 <template>
   <div class="editor-container" @wheel="handleWheel">
-    <!-- 左侧栏 - 笔记列表 -->
-    <div class="sidebar">
-      <!-- 顶部按钮区 - 固定 -->
-      <div class="sidebar-top">
-        <el-button
-          type="success"
-          class="new-note-btn"
-          @click="handleCreateNote"
-          :icon="DocumentAdd"
-        >新建笔记
-        </el-button>
-        <el-input
-          v-model="searchKeyword"
-          placeholder="搜索笔记..."
-          class="search-input"
-          clearable
-          :prefix-icon="Search"
-          @input="handleSearch"
-        />
+    <!-- 左侧栏 - 文件列表 -->
+    <div class="sidebar left-sidebar" :class="{ collapsed: leftCollapsed }">
+      <!-- 折叠按钮 -->
+      <div class="collapse-btn" @click="leftCollapsed = !leftCollapsed">
+        <el-icon v-if="!leftCollapsed"><DArrowLeft /></el-icon>
+        <el-icon v-else><DArrowRight /></el-icon>
       </div>
 
-      <!-- 中间滚动区 -->
-      <div class="note-list">
-        <div
-          v-for="note in notes"
-          :key="note.id"
-          class="note-item"
-          :class="{ active: currentNoteId === note.id }"
-          @click="handleSelectNote(note)"
-        >
-          <div class="note-item-title">{{ note.title || '无标题' }}</div>
-          <div class="note-item-time">{{ formatTime(note.updatedAt) }}</div>
+      <!-- 左侧内容 -->
+      <div v-show="!leftCollapsed" class="sidebar-content">
+        <!-- 顶部文件夹信息 -->
+        <div class="sidebar-header">
+          <el-button
+            type="text"
+            @click="handleBack"
+            :icon="ArrowLeft"
+            class="back-btn"
+          >
+            返回列表
+          </el-button>
         </div>
 
-        <div v-if="notes.length === 0 && !loading" class="empty-notes">
-          暂无笔记
+        <div class="folder-info">
+          <el-icon class="folder-icon"><Folder /></el-icon>
+          <span class="folder-name">{{ currentFolderName || '未分类' }}</span>
         </div>
 
-        <div v-if="loading" class="loading-container">
-          <el-skeleton :rows="5" animated />
-        </div>
-      </div>
+        <div class="divider"></div>
 
-      <!-- 底部固定用户信息 -->
-      <div class="sidebar-footer">
-        <el-dropdown trigger="click" @command="handleUserCommand">
-          <div class="user-info">
-            <div class="user-avatar">
-              <el-icon><User /></el-icon>
-            </div>
-            <div class="user-details">
-              <div class="username">{{ userInfo?.username || '用户' }}</div>
-              <div class="user-email">{{ userInfo?.email || '点击编辑' }}</div>
-            </div>
+        <!-- 笔记列表 -->
+        <div class="note-list">
+          <div
+            v-for="note in folderNotes"
+            :key="note.id"
+            class="note-item"
+            :class="{ active: currentNoteId === note.id }"
+            @click="handleSelectNote(note)"
+          >
+            <div class="note-item-title">{{ note.title || '无标题' }}</div>
+            <div class="note-item-time">{{ formatTime(note.updatedAt) }}</div>
           </div>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="home">返回首页</el-dropdown-item>
-              <el-dropdown-item command="edit">修改个人信息</el-dropdown-item>
-              <el-dropdown-item command="logout" divided>退出登录</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+
+          <div v-if="folderNotes.length === 0 && !loading" class="empty-notes">
+            暂无笔记
+          </div>
+
+          <div v-if="loading" class="loading-container">
+            <el-skeleton :rows="5" animated />
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 右侧编辑区 -->
+    <!-- 中间编辑区 -->
     <div class="editor-main">
       <div class="editor-header">
         <el-button
@@ -108,8 +95,8 @@
 
         <div class="note-info">
           <span>最后更新: {{ formatFullTime(currentNote.updatedAt) }}</span>
-          <span v-if="currentNote.folderName">
-            所属文件夹: {{ currentNote.folderName }}
+          <span v-if="currentFolderName">
+            所属文件夹: {{ currentFolderName }}
           </span>
         </div>
       </div>
@@ -119,27 +106,88 @@
       </div>
     </div>
 
-    <!-- 新建笔记对话框 -->
-    <el-dialog v-model="createNoteDialogVisible" title="新建笔记" width="500px">
-      <el-form :model="newNoteForm" label-width="80px">
-        <el-form-item label="笔记标题">
-          <el-input v-model="newNoteForm.title" placeholder="请输入笔记标题" />
-        </el-form-item>
-        <el-form-item label="所属文件夹">
-          <el-select v-model="newNoteForm.folderId" placeholder="选择文件夹">
-            <el-option label="未分类" :value="null" />
-            <el-option
-              v-for="folder in folders"
-              :key="folder.id"
-              :label="folder.name"
-              :value="folder.id"
-            />
-          </el-select>
+    <!-- 右侧栏 - 标签列表 -->
+    <div class="sidebar right-sidebar" :class="{ collapsed: rightCollapsed }">
+      <!-- 折叠按钮 -->
+      <div class="collapse-btn" @click="rightCollapsed = !rightCollapsed">
+        <el-icon v-if="!rightCollapsed"><DArrowRight /></el-icon>
+        <el-icon v-else><DArrowLeft /></el-icon>
+      </div>
+
+      <!-- 右侧内容 -->
+      <div v-show="!rightCollapsed" class="sidebar-content">
+        <div class="sidebar-header">
+          <h3>标签</h3>
+          <el-button
+            type="primary"
+            size="small"
+            :icon="Plus"
+            @click="handleCreateTag"
+          >
+            添加标签
+          </el-button>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- 当前笔记的标签 -->
+        <div v-if="currentNoteId" class="tag-list">
+          <div class="section-title">当前笔记标签</div>
+          <div
+            v-for="tag in noteTags"
+            :key="tag.id"
+            class="tag-item"
+          >
+            <span class="tag-name">{{ tag.name }}</span>
+            <el-dropdown @command="(cmd) => handleTagAction(cmd, tag)" trigger="click">
+              <el-icon class="tag-more"><MoreFilled /></el-icon>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="edit">编辑</el-dropdown-item>
+                  <el-dropdown-item command="unbind">解除绑定</el-dropdown-item>
+                  <el-dropdown-item command="delete" divided>删除标签</el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+          <div v-if="noteTags.length === 0" class="empty-tags">
+            暂无标签
+          </div>
+        </div>
+
+        <!-- 所有标签 -->
+        <div class="tag-list">
+          <div class="section-title">所有标签</div>
+          <div
+            v-for="tag in allTags"
+            :key="tag.id"
+            class="tag-item"
+            :class="{ bound: isTagBound(tag.id) }"
+            @click="handleTagClick(tag)"
+          >
+            <span class="tag-name">{{ tag.name }}</span>
+          </div>
+          <div v-if="allTags.length === 0" class="empty-tags">
+            暂无标签
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 创建/编辑标签对话框 -->
+    <el-dialog
+      v-model="tagDialogVisible"
+      :title="editingTag ? '编辑标签' : '新建标签'"
+      width="400px"
+    >
+      <el-form :model="tagForm" label-width="80px">
+        <el-form-item label="标签名称">
+          <el-input v-model="tagForm.name" placeholder="请输入标签名称" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createNoteDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSaveNewNote">确定</el-button>
+        <el-button @click="tagDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleSaveTag">确定</el-button>
       </template>
     </el-dialog>
 
@@ -166,13 +214,19 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  DocumentAdd,
   Search,
   User,
   Delete,
-  ArrowLeft
+  ArrowLeft,
+  Folder,
+  DArrowLeft,
+  DArrowRight,
+  Plus,
+  MoreFilled
 } from '@element-plus/icons-vue'
 import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail } from '../api/note'
+import { getTagList, bindTag, createTag, updateTag, deleteTag as deleteTagApi } from '../api/tag'
+import { getFolderList } from '../api/folder'
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
 
@@ -187,11 +241,23 @@ const currentNoteId = computed(() => {
 const loading = ref(false)
 const notes = ref([])
 const folders = ref([])
+const folderNotes = ref([])
 const currentNote = ref(null)
-const searchKeyword = ref('')
+const currentFolderId = ref(null)
 const saveStatus = ref('已保存')
 const saveTimer = ref(null)
 const hasUnsavedChanges = ref(false)
+const leftCollapsed = ref(false)
+const rightCollapsed = ref(false)
+
+// 标签相关
+const allTags = ref([])
+const noteTags = ref([])
+const tagDialogVisible = ref(false)
+const editingTag = ref(null)
+const tagForm = ref({
+  name: ''
+})
 
 // 滚轮控制
 const isCtrlPressed = ref(false)
@@ -221,6 +287,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  if (saveTimer.value) {
+    clearTimeout(saveTimer.value)
+  }
 })
 
 // 用户信息
@@ -231,11 +300,11 @@ const userForm = ref({
   email: ''
 })
 
-// 新建笔记对话框
-const createNoteDialogVisible = ref(false)
-const newNoteForm = ref({
-  title: '',
-  folderId: null
+// 计算属性
+const currentFolderName = computed(() => {
+  if (!currentFolderId.value) return '未分类'
+  const folder = folders.value.find(f => f.id === currentFolderId.value)
+  return folder?.name || ''
 })
 
 // 获取用户信息
@@ -257,44 +326,37 @@ const fetchUserInfo = async () => {
   }
 }
 
+// 获取文件夹列表
+const fetchFolders = async () => {
+  try {
+    const data = await getFolderList({ folder_id: 0 })
+    folders.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('获取文件夹列表失败:', error)
+    folders.value = []
+  }
+}
+
 // 获取笔记列表
 const fetchNotes = async () => {
   loading.value = true
   try {
     const data = await getNoteList()
     notes.value = Array.isArray(data) ? data : (data?.list || [])
+
+    // 筛选当前文件夹的笔记
+    if (currentFolderId.value) {
+      folderNotes.value = notes.value.filter(n => n.folderId === currentFolderId.value)
+    } else {
+      folderNotes.value = notes.value
+    }
   } catch (error) {
     console.error('获取笔记列表失败:', error)
     notes.value = []
+    folderNotes.value = []
   } finally {
     loading.value = false
   }
-}
-
-// 搜索笔记
-let searchTimer = null
-const handleSearch = () => {
-  if (searchTimer) {
-    clearTimeout(searchTimer)
-  }
-
-  if (!searchKeyword.value.trim()) {
-    fetchNotes()
-    return
-  }
-
-  searchTimer = setTimeout(async () => {
-    loading.value = true
-    try {
-      const data = await searchNotes({ keyword: searchKeyword.value })
-      notes.value = Array.isArray(data) ? data : (data?.list || [])
-    } catch (error) {
-      console.error('搜索笔记失败:', error)
-      notes.value = []
-    } finally {
-      loading.value = false
-    }
-  }, 300)
 }
 
 // 获取当前笔记详情
@@ -305,14 +367,52 @@ const fetchNoteDetail = async () => {
   try {
     const data = await getNoteDetail({ note_id: currentNoteId.value })
     currentNote.value = data
+    currentFolderId.value = data.folderId || null
     hasUnsavedChanges.value = false
     saveStatus.value = '已保存'
+
+    // 更新文件夹笔记列表
+    if (currentFolderId.value) {
+      folderNotes.value = notes.value.filter(n => n.folderId === currentFolderId.value)
+    }
+
+    // 获取当前笔记的标签
+    await fetchNoteTags()
   } catch (error) {
     console.error('获取笔记详情失败:', error)
     ElMessage.error('获取笔记详情失败')
   } finally {
     loading.value = false
   }
+}
+
+// 获取所有标签
+const fetchAllTags = async () => {
+  try {
+    const data = await getTagList()
+    allTags.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('获取标签列表失败:', error)
+    allTags.value = []
+  }
+}
+
+// 获取当前笔记的标签
+const fetchNoteTags = async () => {
+  if (!currentNoteId.value) return
+
+  try {
+    const data = await getTagList({ note_id: currentNoteId.value })
+    noteTags.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('获取笔记标签失败:', error)
+    noteTags.value = []
+  }
+}
+
+// 判断标签是否已绑定
+const isTagBound = (tagId) => {
+  return noteTags.value.some(t => t.id === tagId)
 }
 
 // 选择笔记
@@ -379,36 +479,115 @@ const saveNote = async () => {
   }
 }
 
-// 创建新笔记
-const handleCreateNote = () => {
-  newNoteForm.value = {
-    title: '',
-    folderId: null
-  }
-  createNoteDialogVisible.value = true
+// 创建标签
+const handleCreateTag = () => {
+  editingTag.value = null
+  tagForm.value = { name: '' }
+  tagDialogVisible.value = true
 }
 
-// 保存新笔记
-const handleSaveNewNote = async () => {
-  if (!newNoteForm.value.title.trim()) {
-    ElMessage.warning('请输入笔记标题')
+// 保存标签
+const handleSaveTag = async () => {
+  if (!tagForm.value.name.trim()) {
+    ElMessage.warning('请输入标签名称')
     return
   }
 
   try {
-    const data = await createNote({
-      title: newNoteForm.value.title,
-      content: '',
-      folder_id: newNoteForm.value.folderId
-    })
-    createNoteDialogVisible.value = false
-    ElMessage.success('笔记创建成功')
-    fetchNotes()
-    // 后端返回的 data 可能是 { note_id: x } 或直接是 note_id
-    const noteId = data?.note_id || data
-    router.push(`/note/${noteId}`)
+    if (editingTag.value) {
+      // 更新标签
+      await updateTag({
+        tag_id: editingTag.value.id,
+        name: tagForm.value.name
+      })
+      ElMessage.success('标签修改成功')
+    } else {
+      // 创建标签
+      await createTag({ name: tagForm.value.name })
+      ElMessage.success('标签创建成功')
+    }
+    tagDialogVisible.value = false
+    fetchAllTags()
+    if (currentNoteId.value) {
+      await fetchNoteTags()
+    }
   } catch (error) {
-    console.error('创建笔记失败:', error)
+    console.error('保存标签失败:', error)
+  }
+}
+
+// 标签操作
+const handleTagAction = (command, tag) => {
+  if (command === 'edit') {
+    editingTag.value = tag
+    tagForm.value = { name: tag.name }
+    tagDialogVisible.value = true
+  } else if (command === 'unbind') {
+    ElMessageBox.confirm('确定要解除该标签与当前笔记的绑定吗？', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(async () => {
+      try {
+        // 解除绑定：只保留未点击的标签
+        const boundTagIds = noteTags.value
+          .filter(t => t.id !== tag.id)
+          .map(t => t.id)
+        await bindTag({
+          note_id: currentNoteId.value,
+          tag_ids: boundTagIds
+        })
+        ElMessage.success('标签已解除绑定')
+        await fetchNoteTags()
+      } catch (error) {
+        console.error('解除标签绑定失败:', error)
+      }
+    }).catch(() => {})
+  } else if (command === 'delete') {
+    ElMessageBox.confirm('确定要删除该标签吗？删除后所有关联的笔记将失去该标签。', '提示', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(async () => {
+      try {
+        await deleteTagApi({ tag_id: tag.id })
+        ElMessage.success('标签删除成功')
+        fetchAllTags()
+        if (currentNoteId.value) {
+          await fetchNoteTags()
+        }
+      } catch (error) {
+        console.error('删除标签失败:', error)
+      }
+    }).catch(() => {})
+  }
+}
+
+// 点击标签进行绑定/解绑
+const handleTagClick = async (tag) => {
+  if (!currentNoteId.value) return
+
+  try {
+    if (isTagBound(tag.id)) {
+      // 解绑
+      const boundTagIds = noteTags.value
+        .filter(t => t.id !== tag.id)
+        .map(t => t.id)
+      await bindTag({
+        note_id: currentNoteId.value,
+        tag_ids: boundTagIds
+      })
+    } else {
+      // 绑定
+      const boundTagIds = [...noteTags.value.map(t => t.id), tag.id]
+      await bindTag({
+        note_id: currentNoteId.value,
+        tag_ids: boundTagIds
+      })
+    }
+    await fetchNoteTags()
+  } catch (error) {
+    console.error('标签绑定操作失败:', error)
   }
 }
 
@@ -426,7 +605,7 @@ const handleDeleteNote = async () => {
     await deleteNote({ note_id: currentNote.value.id })
     ElMessage.success('笔记删除成功')
     hasUnsavedChanges.value = false
-    router.push('/')
+    router.push('/home')
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除笔记失败:', error)
@@ -443,28 +622,14 @@ const handleBack = () => {
       type: 'warning'
     }).then(() => {
       saveNote().then(() => {
-        router.push('/')
+        router.push('/home')
       })
     }).catch(() => {
       hasUnsavedChanges.value = false
-      router.push('/')
+      router.push('/home')
     })
   } else {
-    router.push('/')
-  }
-}
-
-const handleUserCommand = (command) => {
-  if (command === 'home') {
-    router.push('/')
-  } else if (command === 'edit') {
-    userForm.value = {
-      username: userInfo.value?.username || '',
-      email: userInfo.value?.email || ''
-    }
-    editUserDialogVisible.value = true
-  } else if (command === 'logout') {
-    handleLogout()
+    router.push('/home')
   }
 }
 
@@ -539,34 +704,13 @@ const formatFullTime = (dateString) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
 
-// 从本地存储加载文件夹
-const loadFoldersFromStorage = () => {
-  const storedFolders = localStorage.getItem('folders')
-  if (storedFolders) {
-    try {
-      folders.value = JSON.parse(storedFolders)
-    } catch (e) {
-      console.error('解析文件夹数据失败:', e)
-    }
-  }
-}
-
 onMounted(() => {
   window.addEventListener('wheel', handleWheel)
   fetchUserInfo()
-  loadFoldersFromStorage()
+  fetchFolders()
   fetchNotes()
+  fetchAllTags()
   fetchNoteDetail()
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('wheel', handleWheel)
-  if (saveTimer.value) {
-    clearTimeout(saveTimer.value)
-  }
-  if (searchTimer) {
-    clearTimeout(searchTimer)
-  }
 })
 </script>
 
@@ -581,56 +725,127 @@ onBeforeUnmount(() => {
   background-color: #272e33;
 }
 
-.el-container {
-  height: 100%;
-}
-
-/* 左侧栏 */
+/* 左侧栏和右侧栏基础样式 */
 .sidebar {
-  width: 16%;
-  min-width: 280px;
-  max-width: 400px;
-  background-color: #2d353b;
-  border-right: 1px solid #7a8478;
   display: flex;
   flex-direction: column;
   position: relative;
+  background-color: #2d353b;
+  border-right: 1px solid #7a8478;
+  transition: width 0.3s ease;
+  z-index: 10;
 }
 
-.sidebar-header {
-  padding: 16px;
-  border-bottom: 1px solid #7a8478;
+.left-sidebar {
+  width: 280px;
 }
 
-.sidebar-header .el-button {
-  margin-bottom: 12px;
+.left-sidebar.collapsed {
+  width: 40px;
 }
 
-.new-folder-btn,
-.new-note-btn {
-  width: 90%;
-  margin-bottom: 12px;
-  margin: 16px 16px 12px 16px;
+.right-sidebar {
+  border-right: none;
+  border-left: 1px solid #7a8478;
+  width: 280px;
 }
 
-.search-input {
-  width: 90%;
-  margin: 0 16px 16px 16px;
+.right-sidebar.collapsed {
+  width: 40px;
 }
 
-.search-input :deep(.el-input__wrapper) {
+.sidebar-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 折叠按钮 */
+.collapse-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 40px;
   background-color: #414b50;
-  border-color: #7a8478;
-}
-
-.search-input :deep(.el-input__inner) {
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  z-index: 20;
   color: #d3c6aa;
 }
 
+.left-sidebar .collapse-btn {
+  right: -10px;
+}
+
+.right-sidebar .collapse-btn {
+  left: -10px;
+}
+
+.collapse-btn:hover {
+  background-color: #7fbbb3;
+  color: #272e33;
+}
+
+/* 顶部区域 */
+.sidebar-header {
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #7a8478;
+}
+
+.sidebar-header h3 {
+  margin: 0;
+  color: #d3c6aa;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.back-btn {
+  color: #d3c6aa;
+}
+
+.back-btn:hover {
+  color: #7fbbb3;
+}
+
+/* 文件夹信息 */
+.folder-info {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  color: #a7c080;
+  font-size: 14px;
+}
+
+.folder-icon {
+  margin-right: 8px;
+  font-size: 18px;
+}
+
+.folder-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+/* 分隔线 */
+.divider {
+  height: 1px;
+  background-color: #7a8478;
+  margin: 0 16px;
+}
+
+/* 笔记列表 */
 .note-list {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 12px;
 }
 
 .note-list::-webkit-scrollbar {
@@ -685,61 +900,70 @@ onBeforeUnmount(() => {
   padding: 20px;
 }
 
-.sidebar-footer {
+/* 标签列表 */
+.tag-list {
   padding: 12px 16px;
-  border-top: 1px solid #7a8478;
-  background-color: #2d353b;
+  margin-bottom: 16px;
 }
 
-.user-info {
+.section-title {
+  color: #9da9a0;
+  font-size: 12px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.tag-item {
   display: flex;
   align-items: center;
+  padding: 8px 12px;
+  border-radius: 6px;
   cursor: pointer;
-  padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.user-info:hover {
+  transition: all 0.2s;
+  margin-bottom: 4px;
   background-color: #414b50;
+  position: relative;
 }
 
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+.tag-item:hover {
+  background-color: #3d484d;
+}
+
+.tag-item.bound {
   background-color: #7fbbb3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-right: 12px;
 }
 
-.user-avatar .el-icon {
-  font-size: 20px;
+.tag-item.bound .tag-name {
   color: #272e33;
 }
 
-.user-details {
+.tag-name {
   flex: 1;
-}
-
-.username {
   color: #d3c6aa;
   font-size: 14px;
-  font-weight: 500;
-  margin-bottom: 2px;
 }
 
-.user-email {
-  color: #9da9a0;
-  font-size: 12px;
+.tag-more {
+  color: #7a8478;
+  padding: 2px;
+}
+
+.tag-item:hover .tag-more {
+  color: #d3c6aa;
+}
+
+.empty-tags {
+  text-align: center;
+  color: #7a8478;
+  padding: 12px;
+  font-size: 13px;
 }
 
 /* 编辑区 */
 .editor-main {
-  /* display: flex; */
   flex: 1;
+  display: flex;
   flex-direction: column;
   background-color: #272e33;
   padding: 0;
@@ -752,14 +976,6 @@ onBeforeUnmount(() => {
   padding: 12px 24px;
   background-color: #2d353b;
   border-bottom: 1px solid #7a8478;
-}
-
-.back-btn {
-  color: #d3c6aa;
-}
-
-.back-btn:hover {
-  color: #7fbbb3;
 }
 
 .header-actions {
@@ -873,17 +1089,42 @@ onBeforeUnmount(() => {
     border-right-color: #a7c080;
   }
 
+  .right-sidebar {
+    border-left-color: #a7c080;
+  }
+
+  .collapse-btn {
+    background-color: #e6dcc4;
+    color: #5c6a72;
+  }
+
+  .collapse-btn:hover {
+    background-color: #7fbbb3;
+    color: #fdf6e3;
+  }
+
   .sidebar-header {
     border-bottom-color: #a7c080;
   }
 
-  .search-input :deep(.el-input__wrapper) {
-    background-color: #e6dcc4;
-    border-color: #a7c080;
+  .sidebar-header h3 {
+    color: #5c6a72;
   }
 
-  .search-input :deep(.el-input__inner) {
+  .back-btn {
     color: #5c6a72;
+  }
+
+  .back-btn:hover {
+    color: #7fbbb3;
+  }
+
+  .folder-info {
+    color: #7fbbb3;
+  }
+
+  .divider {
+    background-color: #a7c080;
   }
 
   .note-item:hover {
@@ -899,38 +1140,53 @@ onBeforeUnmount(() => {
     color: #5c6a72;
   }
 
-  .sidebar-footer {
-    background-color: #f3e7c8;
-    border-top-color: #a7c080;
+  .empty-notes {
+    color: #9da9a0;
   }
 
-  .user-info:hover {
+  .section-title {
+    color: #9da9a0;
+  }
+
+  .tag-item {
     background-color: #e6dcc4;
   }
 
-  .user-avatar .el-icon {
+  .tag-item:hover {
+    background-color: #d9d3bc;
+  }
+
+  .tag-item.bound {
+    background-color: #7fbbb3;
+  }
+
+  .tag-item.bound .tag-name {
     color: #fdf6e3;
   }
 
-  .username {
+  .tag-name {
     color: #5c6a72;
+  }
+
+  .tag-more {
+    color: #9da9a0;
+  }
+
+  .tag-item:hover .tag-more {
+    color: #5c6a72;
+  }
+
+  .empty-tags {
+    color: #9da9a0;
+  }
+
+  .editor-main {
+    background-color: #fdf6e3;
   }
 
   .editor-header {
     background-color: #f3e7c8;
     border-bottom-color: #a7c080;
-  }
-
-  .back-btn {
-    color: #5c6a72;
-  }
-
-  .back-btn:hover {
-    color: #7fbbb3;
-  }
-
-  .editor-main {
-    background-color: #fdf6e3;
   }
 
   .title-input :deep(.el-input__wrapper) {
