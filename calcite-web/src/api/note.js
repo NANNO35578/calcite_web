@@ -62,7 +62,10 @@ export function getNoteDetail(params) {
 
 /**
  * 全文搜索笔记
- * @param {Object} params - { keyword, page?, pageSize? }
+ * @param {Object} params - { keyword, from?, size? }
+ * @param {string} params.keyword - 搜索关键词
+ * @param {number} params.from - 分页起始位置，默认0
+ * @param {number} params.size - 每页条数，默认20，最大100
  */
 export function searchNotes(params) {
   return request({

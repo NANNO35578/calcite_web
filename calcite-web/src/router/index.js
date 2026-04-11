@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Register from '../views/Register.vue'
-import Profile from '../views/Profile.vue'
 import Home from '../views/Home.vue'
-import NoteEditor from '../views/NoteEditor.vue'
 
 const routes = [
   {
@@ -24,22 +22,6 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: Home,
-    meta: {
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/note/:id',
-    name: 'NoteEditor',
-    component: NoteEditor,
-    meta: {
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/profile',
-    name: 'Profile',
-    component: Profile,
     meta: {
       requiresAuth: true
     }
@@ -67,4 +49,3 @@ router.beforeEach((to, from, next) => {
 })
 
 export default router
-

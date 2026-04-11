@@ -39,4 +39,4 @@ src/
 
 ## 后端REST API接口
 
-详见[API文档](./api.md)
+详见[API文档](./docs/api.md)

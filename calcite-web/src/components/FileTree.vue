@@ -203,16 +203,20 @@ const handleFolderContextMenu = (event, folder) => {
 </script>
 
 <style scoped>
+/* ===== 文件树容器 ===== */
 .file-tree {
   user-select: none;
+  min-height: 0; /* 关键：防止 flex 子项溢出 */
 }
 
 .tree-node {
   /* 树节点容器 */
 }
 
+/* ===== 子节点容器 ===== */
 .tree-children {
   /* 子节点缩进 */
+  min-height: 0; /* 关键：防止 flex 子项溢出 */
 }
 
 .file-tree .tree-children .file-tree {
@@ -223,6 +227,7 @@ const handleFolderContextMenu = (event, folder) => {
   padding-left: 24px;
 }
 
+/* ===== 树形条目 - 保持最小高度不挤压 ===== */
 .tree-item {
   display: flex;
   align-items: center;
@@ -232,14 +237,16 @@ const handleFolderContextMenu = (event, folder) => {
   transition: background-color 0.15s;
   margin-bottom: 2px;
   position: relative;
+  min-height: 32px; /* 关键：设置最小高度，防止被挤压 */
+  flex-shrink: 0; /* 关键：防止 flex 压缩 */
 }
 
 .tree-item:hover {
-  background-color: var(--tree-item-hover-bg, rgba(127, 187, 179, 0.15));
+  background-color: rgba(127, 187, 179, 0.15);
 }
 
 .tree-item.active {
-  background-color: var(--tree-item-active-bg, rgba(127, 187, 179, 0.25));
+  background-color: rgba(127, 187, 179, 0.25);
 }
 
 /* 选中指示器 */
@@ -257,7 +264,7 @@ const handleFolderContextMenu = (event, folder) => {
 .folder-icon {
   margin-right: 8px;
   font-size: 16px;
-  color: var(--folder-icon-color, #a7c080);
+  color: var(--component-folder);
   flex-shrink: 0;
 }
 
@@ -266,26 +273,26 @@ const handleFolderContextMenu = (event, folder) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--tree-text-color, #d3c6aa);
+  color: var(--text-primary);
   font-size: 13px;
   margin-right: 24px;
 }
 
 .folder-item.active .folder-name {
-  color: var(--tree-active-text-color, #7fbbb3);
+  color: var(--accent-primary);
 }
 
 .expand-icon {
   width: 16px;
   height: 16px;
   margin-right: 4px;
-  color: var(--tree-icon-color, #7a8478);
+  color: var(--text-muted);
   flex-shrink: 0;
 }
 
 .more-icon {
   opacity: 0;
-  color: var(--tree-icon-color, #7a8478);
+  color: var(--text-muted);
   padding: 2px;
   transition: opacity 0.15s;
   flex-shrink: 0;
@@ -308,7 +315,7 @@ const handleFolderContextMenu = (event, folder) => {
 .note-icon {
   margin-right: 8px;
   font-size: 14px;
-  color: var(--note-icon-color, #7fbbb3);
+  color: var(--component-note);
   flex-shrink: 0;
 }
 
@@ -317,13 +324,13 @@ const handleFolderContextMenu = (event, folder) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--tree-text-color, #d3c6aa);
+  color: var(--text-primary);
   font-size: 13px;
   margin-right: 24px;
 }
 
 .note-item.active .note-name {
-  color: var(--tree-active-text-color, #7fbbb3);
+  color: var(--accent-primary);
 }
 
 /* 空状态 */
@@ -333,19 +340,9 @@ const handleFolderContextMenu = (event, folder) => {
 }
 
 .empty-text {
-  color: var(--tree-empty-color, #7a8478);
+  color: var(--text-muted);
   font-size: 13px;
 }
 
-/* 浅色模式适配 */
-@media (prefers-color-scheme: light) {
-  .tree-item {
-    --tree-item-hover-bg: rgba(127, 187, 179, 0.1);
-    --tree-item-active-bg: rgba(127, 187, 179, 0.2);
-    --tree-icon-color: #9da9a0;
-    --tree-text-color: #5c6a72;
-    --tree-active-text-color: #7fbbb3;
-    --tree-empty-color: #9da9a0;
-  }
-}
+/* 浅色模式由 theme.css 统一控制 */
 </style>

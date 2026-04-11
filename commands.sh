@@ -23,3 +23,6 @@ git push origin main
 git add .
 git commit -m "FEnd: Notes Module UI integrated based on APIs"
 git push origin main
+
+
+npm install md-editor-v3

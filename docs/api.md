@@ -333,9 +333,11 @@ Header: `Authorization: Bearer {token}`
 Header: `Authorization: Bearer {token}`
 
 **请求参数：**
-| 参数    | 类型   | 必填 | 说明     |
-| ------- | ------ | ------ | -------- |
-| keyword | string | 是     | 搜索关键词 |
+| 参数    | 类型   | 必填 | 说明                    |
+| ------- | ------ | ------ | ---------------------- |
+| keyword | string | 是     | 搜索关键词              |
+| from    | int    | 否     | 分页起始位置，默认0     |
+| size    | int    | 否     | 每页数量，默认20，最大100 |
 
 **响应示例：**
 ```json
@@ -349,13 +351,25 @@ Header: `Authorization: Bearer {token}`
       "summary": "笔记摘要",
       "folder_id": 1,
       "created_at": "2025-01-01 12:00:00",
-      "updated_at": "2025-01-01 12:00:00"
+      "updated_at": "2025-01-01 12:00:00",
+      "highlight_title": "我的第一篇<mark>笔记</mark>",
+      "highlight_content": "这是一篇关于<mark>笔记</mark>的测试内容...",
+      "score": 1.25
     }
   ]
 }
 ```
 
-> 注：搜索匹配 title、content、summary 字段，响应不包含 `content` 字段
+**说明：**
+- 搜索基于 Elasticsearch 实现，支持全文检索
+- 搜索匹配字段（按权重排序）：title(3x)、tags(2x)、summary(2x)、content(1x)
+- 支持模糊匹配（fuzziness: AUTO）
+- 返回结果按相关度分数降序排列，分数相同按更新时间降序
+- `highlight_title`: 标题中的匹配高亮片段（使用 `<mark>` 标签）
+- `highlight_content`: 内容中的匹配高亮片段
+- `score`: 匹配相关度分数
+- 响应不包含完整 `content` 字段，需要详情请调用 `/api/note/detail`
+
 
 ---
 
