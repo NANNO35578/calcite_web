@@ -1,22 +1,25 @@
 <template>
-  <!-- 顶部按钮区：新建笔记、新建文件夹 -->
-  <div class="sidebar-top">
-    <el-button
-      type="success"
-      class="action-btn"
-      @click="$emit('create-note')"
-      :icon="DocumentAdd"
-    >
-      新建笔记
-    </el-button>
-    <el-button
-      type="primary"
-      class="action-btn"
-      @click="$emit('create-folder')"
-      :icon="FolderAdd"
-    >
-      新建文件夹
-    </el-button>
+  <div class="sidebar-toolbar">
+    <el-tooltip content="新建笔记" placement="bottom">
+      <el-button
+        type="success"
+        size="small"
+        :icon="DocumentAdd"
+        @click="$emit('create-note')"
+        class="icon-btn"
+        circle
+      />
+    </el-tooltip>
+    <el-tooltip content="新建文件夹" placement="bottom">
+      <el-button
+        type="primary"
+        size="small"
+        :icon="FolderAdd"
+        @click="$emit('create-folder')"
+        class="icon-btn"
+        circle
+      />
+    </el-tooltip>
   </div>
 </template>
 
@@ -27,15 +30,23 @@ defineEmits(['create-note', 'create-folder'])
 </script>
 
 <style scoped>
-.sidebar-top {
-  padding: 12px;
+.sidebar-toolbar {
   display: flex;
   align-items: center;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+  padding: 8px 12px;
+  height: 48px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
-.action-btn {
-  width: 100%;
+.icon-btn {
+  font-size: 16px;
+}
+
+.icon-btn:hover {
+  transform: scale(1.05);
 }
 </style>

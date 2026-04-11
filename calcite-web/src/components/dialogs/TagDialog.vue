@@ -3,7 +3,7 @@
     :model-value="visible" 
     @update:model-value="$emit('update:visible', $event)"
     :title="isEditing ? '编辑标签' : '新建标签'" 
-    width="400px"
+    <!-- width="400px" -->
   >
     <el-form :model="form" label-width="80px">
       <el-form-item label="标签名称">

@@ -1,10 +1,18 @@
 <template>
   <div class="sidebar-content">
-    <div class="sidebar-header">
-      <h3>标签</h3>
-      <el-button type="primary" size="small" :icon="DocumentAdd" @click="$emit('create-tag')">
-        添加标签
-      </el-button>
+    <!-- 顶部工具栏 -->
+    <div class="sidebar-toolbar">
+      <span class="sidebar-title">标签</span>
+      <el-tooltip content="添加标签" placement="bottom">
+        <el-button
+          type="primary"
+          size="small"
+          :icon="DocumentAdd"
+          @click="$emit('create-tag')"
+          class="icon-btn"
+          circle
+        />
+      </el-tooltip>
     </div>
 
     <div class="divider"></div>
@@ -46,24 +54,36 @@ defineEmits(['create-tag', 'tag-action', 'tag-click'])
 
 <style scoped>
 .sidebar-content {
-  flex: 1;
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
-.sidebar-header {
-  padding: 16px;
+.sidebar-toolbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  height: 48px;
+  box-sizing: border-box;
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
 }
 
-.sidebar-header h3 {
-  margin: 0;
+.sidebar-title {
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
+}
+
+.icon-btn {
+  font-size: 16px;
+}
+
+.icon-btn:hover {
+  transform: scale(1.05);
 }
 
 .divider {

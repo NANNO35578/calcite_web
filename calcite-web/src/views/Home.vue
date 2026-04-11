@@ -1,9 +1,9 @@
 <template>
   <div class="home-container" @wheel="handleWheel">
-    <!-- 使用 ElSplitter 实现三栏拖拽布局，默认比例 1:2:1 -->
-    <el-splitter v-model="splitterSizes" class="main-splitter">
+    <!-- 使用 ElSplitter 实现三栏拖拽布局，默认比例 1:2:1 (25% : 50% : 25%) -->
+    <el-splitter class="main-splitter">
       <!-- 左侧栏 - 文件浏览器 -->
-      <el-splitter-pane :size="splitterSizes[0]" min-size="200" max-size="400">
+      <el-splitter-panel :size="leftCollapsed ? '0px' : '20%'" :min="0" :resizable="!leftCollapsed">
         <LeftSidebar
           :all-folders="allFolders"
           :folders="rootFolders"
@@ -11,17 +11,9 @@
           :selected-folder-id="selectedFolderId"
           :selected-note-id="editingNote?.id || selectedNoteId"
           :expanded-folders="expandedFolders"
-          :search-keyword="searchKeyword"
-          @update:search-keyword="searchKeyword = $event"
-          :search-results="searchResults"
-          :search-total="searchTotal"
-          :search-from="searchFrom"
-          :search-page-size="searchPageSize"
-          :searching="searching"
           :user-info="userInfo"
           @create-note="handleCreateNote"
           @create-folder="handleCreateFolder"
-          @search-input="handleSearch"
           @folder-click="handleFolderClick"
           @folder-expand="handleFolderExpand"
           @folder-collapse="handleFolderCollapse"
@@ -29,26 +21,40 @@
           @folder-create="handleCreateFolder"
           @folder-rename="handleRenameFolder"
           @folder-delete="handleDeleteFolder"
-          @search-prev="handleSearchPrev"
-          @search-next="handleSearchNext"
           @user-command="handleUserCommand"
         />
-      </el-splitter-pane>
+      </el-splitter-panel>
 
-      <!-- 中间内容区 -->
-      <el-splitter-pane :size="splitterSizes[1]">
+      <!-- 中间内容区 (自适应剩余宽度) -->
+      <el-splitter-panel size="60%" :min="300">
         <div class="main-content">
-          <!-- 顶部工具栏：控制左右侧栏 -->
+          <!-- 顶部工具栏：控制左右侧栏、搜索 -->
           <CenterToolbar
-            :left-collapsed="leftCollapsed"
-            :right-collapsed="rightCollapsed"
+            v-model:search-keyword="searchKeyword"
             @toggle-left="leftCollapsed = !leftCollapsed"
             @toggle-right="rightCollapsed = !rightCollapsed"
+            @search-input="handleSearch"
+            @search-prev="handleSearchPrev"
+            @search-next="handleSearchNext"
+          />
+
+          <!-- 搜索结果视图 -->
+          <SearchResults
+            v-if="searchKeyword && !editingNote"
+            :results="searchResults"
+            :total="searchTotal"
+            :from="searchFrom"
+            :page-size="searchPageSize"
+            :loading="searching"
+            :selected-note-id="selectedNoteId"
+            @note-click="handleNoteClick"
+            @prev="handleSearchPrev"
+            @next="handleSearchNext"
           />
 
           <!-- 笔记列表视图 -->
           <NoteListView
-            v-if="!editingNote"
+            v-else-if="!editingNote"
             :title="contentTitle"
             :notes="displayNotes"
             :loading="loading"
@@ -69,10 +75,10 @@
             @delete="handleDeleteNote"
           />
         </div>
-      </el-splitter-pane>
+      </el-splitter-panel>
 
       <!-- 右侧栏 - 标签管理 -->
-      <el-splitter-pane :size="splitterSizes[2]" min-size="200" max-size="400">
+      <el-splitter-panel :size="rightCollapsed ? '0px' : '20%'" :min="0" :resizable="!rightCollapsed">
         <RightSidebar
           :all-tags="allTags"
           :note-tags="noteTags"
@@ -82,7 +88,7 @@
           @tag-action="handleTagAction"
           @tag-click="handleTagClick"
         />
-      </el-splitter-pane>
+      </el-splitter-panel>
     </el-splitter>
 
     <!-- 文件夹对话框 -->
@@ -140,6 +146,7 @@ import { getTagList, bindTag, createTag, updateTag, deleteTag as deleteTagApi } 
 // 导入拆分后的组件
 import LeftSidebar from '../components/sidebar/LeftSidebar.vue'
 import RightSidebar from '../components/sidebar/RightSidebar.vue'
+import SearchResults from '../components/sidebar/SearchResults.vue'
 import CenterToolbar from '../components/center/CenterToolbar.vue'
 import NoteListView from '../components/center/NoteListView.vue'
 import NoteEditor from '../components/center/NoteEditor.vue'
@@ -174,8 +181,7 @@ watch(rightCollapsed, (val) => {
   localStorage.setItem('calcite:rightCollapsed', String(val))
 })
 
-// ===== ElSplitter 尺寸配置（默认比例 1:2:1）=====
-const splitterSizes = ref([25, 50, 25])
+
 
 // ===== 编辑器状态 =====
 const editingNote = ref(null)
@@ -836,32 +842,51 @@ const getFolderName = (folderId) => {
 </script>
 
 <style scoped>
+/* ===== 根容器：铺满整个视口 ===== */
 .home-container {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   background-color: var(--bg-primary);
-}
-
-.main-splitter {
-  width: 100%;
-  height: 100%;
-}
-
-.main-splitter :deep(.el-splitter__pane) {
   overflow: hidden;
 }
 
-.main-content {
+/* ===== ElSplitter：铺满父容器 ===== */
+.main-splitter {
+  width: 100%;
+  height: 100%;
   flex: 1;
+}
+
+/* ===== ElSplitter Panel：确保内容区填满 ===== */
+.main-splitter :deep(.el-splitter__panel) {
+  overflow: hidden;
+  height: 100%;
+}
+
+
+
+/* ===== ElSplitter 拖拽条样式 ===== */
+.main-splitter :deep(.el-splitter__bar) {
+  background-color: var(--border-primary);
+}
+
+.main-splitter :deep(.el-splitter__bar:hover) {
+  background-color: var(--accent-primary);
+}
+
+/* ===== 中间内容区容器 ===== */
+.main-content {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-primary);
   overflow: hidden;
-  min-width: 0;
-  height: 100%;
 }
 </style>

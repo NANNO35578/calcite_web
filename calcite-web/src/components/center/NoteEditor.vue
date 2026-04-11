@@ -69,9 +69,12 @@ const formatFullTime = (dateString) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 24px;
+  padding: 8px 24px;
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
+  flex-shrink: 0;
+  height: 48px;
+  box-sizing: border-box;
 }
 
 .back-btn {
@@ -95,7 +98,7 @@ const formatFullTime = (dateString) => {
 
 .editor-content {
   flex: 1;
-  padding: 24px;
+  padding: 16px 24px 24px;
   overflow-y: auto;
 }
 

@@ -52,10 +52,11 @@ defineEmits(['click', 'action'])
 
 <style scoped>
 .tag-list {
-  max-height: 300px;
+  flex: 1;
   overflow-y: auto;
   padding: 12px 16px;
   margin-bottom: 16px;
+  min-height: 0;
 }
 
 .section-title {

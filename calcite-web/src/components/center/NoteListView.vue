@@ -27,7 +27,7 @@ defineEmits(['note-click'])
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 16px 24px 24px;
   overflow: hidden;
 }
 
@@ -37,18 +37,19 @@ defineEmits(['note-click'])
   align-items: center;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--border-primary);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .content-header h2 {
   margin: 0;
   color: var(--text-primary);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
 }
 
 .note-count {
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
 }
 </style>
