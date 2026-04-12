@@ -13,9 +13,10 @@
   /* ========== 深色主题 (默认) ========== */
   
   /* 背景色 */
+  --bg-md: #2d353b;
   --bg-primary: #272e33;
   --bg-secondary: #2d353b;
-  --bg-tertiary: #414b50;
+  --bg-tertiary: #2d353b;
   --bg-hover: #3d484d;
   --bg-active: #4a5658;
   
@@ -32,7 +33,7 @@
   --accent-error: #e67e80;
   
   /* 边框色 */
-  --border-primary: #7a8478;
+  --border-primary: #2d353b;
   --border-secondary: #4a5658;
   --border-accent: #7fbbb3;
   
@@ -49,7 +50,7 @@
 /* ========== Element Plus 组件适配 ========== */
 
 /* 对话框 */
-.el-dialog {
+/* .el-dialog {
   background-color: var(--bg-secondary) !important;
 }
 
@@ -59,29 +60,29 @@
 
 .el-dialog__title {
   color: var(--text-primary) !important;
-}
+} */
 
 /* 表单 */
-.el-form-item__label {
+/* .el-form-item__label {
   color: var(--accent-secondary) !important;
-}
+} */
 
 /* 输入框 */
-.el-input__wrapper {
+/* .el-input__wrapper {
   background-color: var(--bg-tertiary) !important;
   box-shadow: none !important;
-}
+} */
 
-.el-input__inner {
+/* .el-input__inner {
   color: var(--text-primary) !important;
 }
 
 .el-input__inner::placeholder {
   color: var(--text-muted) !important;
-}
+} */
 
 /* 文本域 */
-.el-textarea__inner {
+/* .el-textarea__inner {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-primary) !important;
   color: var(--text-primary) !important;
@@ -89,10 +90,10 @@
 
 .el-textarea__inner:focus {
   border-color: var(--accent-primary) !important;
-}
+} */
 
 /* 选择器 */
-.el-select__wrapper {
+/* .el-select__wrapper {
   background-color: var(--bg-tertiary) !important;
 }
 
@@ -109,10 +110,10 @@
 .el-select-dropdown__item.selected {
   background-color: var(--bg-hover) !important;
   color: var(--accent-primary) !important;
-}
+} */
 
 /* 下拉菜单 */
-.el-dropdown-menu {
+/* .el-dropdown-menu {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-primary) !important;
 }
@@ -128,10 +129,10 @@
 
 .el-dropdown-menu__item--divided {
   border-top-color: var(--border-primary) !important;
-}
+} */
 
 /* 按钮 - 默认样式 */
-.el-button {
+/* .el-button {
   background-color: var(--bg-tertiary) !important;
   border-color: var(--border-primary) !important;
   color: var(--text-primary) !important;
@@ -141,10 +142,10 @@
   background-color: var(--bg-hover) !important;
   border-color: var(--accent-primary) !important;
   color: var(--accent-primary) !important;
-}
+} */
 
 /* 主要按钮 */
-.el-button--primary {
+/* .el-button--primary {
   background-color: var(--accent-primary) !important;
   border-color: var(--accent-primary) !important;
   color: var(--text-inverse) !important;
@@ -154,24 +155,24 @@
   background-color: var(--accent-primary) !important;
   border-color: var(--accent-primary) !important;
   opacity: 0.9;
-}
+} */
 
 /* 成功按钮 */
-.el-button--success {
+/* .el-button--success {
   background-color: var(--accent-secondary) !important;
   border-color: var(--accent-secondary) !important;
   color: var(--text-inverse) !important;
-}
+} */
 
 /* 危险按钮 */
-.el-button--danger {
+/* .el-button--danger {
   background-color: var(--accent-error) !important;
   border-color: var(--accent-error) !important;
   color: var(--text-inverse) !important;
-}
+} */
 
 /* 文本按钮 */
-.el-button--text {
+/* .el-button--text {
   background-color: transparent !important;
   border-color: transparent !important;
   color: var(--text-primary) !important;
@@ -179,36 +180,36 @@
 
 .el-button--text:hover {
   color: var(--accent-primary) !important;
-}
+} */
 
 /* 卡片 */
-.el-card {
+/* .el-card {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-primary) !important;
-}
+} */
 
 /* 空状态 */
-.el-empty {
+/* .el-empty {
   --el-empty-description-color: var(--text-muted) !important;
-}
+} */
 
 /* 骨架屏 */
-.el-skeleton__item {
+/* .el-skeleton__item {
   background: var(--bg-tertiary) !important;
-}
+} */
 
 /* 消息提示 */
-.el-message {
+/* .el-message {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-primary) !important;
 }
 
 .el-message__content {
   color: var(--text-primary) !important;
-}
+} */
 
 /* 消息盒子 */
-.el-message-box {
+/* .el-message-box {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-primary) !important;
 }
@@ -219,10 +220,10 @@
 
 .el-message-box__message {
   color: var(--text-secondary) !important;
-}
+} */
 
 /* 滚动条 */
-::-webkit-scrollbar {
+/* ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
@@ -238,4 +239,4 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-muted);
-}
+} */

@@ -36,7 +36,7 @@ defineEmits(['create-note', 'create-folder'])
   justify-content: center;
   gap: 12px;
   padding: 8px 12px;
-  height: 48px;
+  height: 40px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;

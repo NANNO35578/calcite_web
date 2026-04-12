@@ -66,7 +66,7 @@ defineEmits(['create-tag', 'tag-action', 'tag-click'])
   align-items: center;
   justify-content: space-between;
   padding: 8px 16px;
-  height: 48px;
+  height: 40px;
   box-sizing: border-box;
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;

@@ -60,7 +60,7 @@ defineEmits(['update:search-keyword', 'search-input', 'toggle-left', 'toggle-rig
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;
-  height: 48px;
+  height: 40px;
   box-sizing: border-box;
 }
 
