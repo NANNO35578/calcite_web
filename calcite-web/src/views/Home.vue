@@ -73,20 +73,27 @@
             @input="handleNoteChange"
             @back="closeEditor"
             @delete="handleDeleteNote"
+            @file-uploaded="handleFileUploaded"
           />
         </div>
       </el-splitter-panel>
 
-      <!-- 右侧栏 - 标签管理 -->
+      <!-- 右侧栏 - 标签和文件管理 -->
       <el-splitter-panel :size="rightCollapsed ? '0px' : '20%'" :min="0" :resizable="!rightCollapsed">
         <RightSidebar
           :all-tags="allTags"
           :note-tags="noteTags"
           :editing-note="editingNote"
           :is-tag-bound="isTagBound"
+          :files="noteFiles"
+          :all-files="allFiles"
+          :files-loading="filesLoading"
           @create-tag="handleCreateTag"
           @tag-action="handleTagAction"
           @tag-click="handleTagClick"
+          @file-delete="handleDeleteFile"
+          @file-refresh="handleFileRefresh"
+          @view-mode-change="handleViewModeChange"
         />
       </el-splitter-panel>
     </el-splitter>
@@ -142,6 +149,7 @@ import { createFolder, getFolderList, updateFolder, deleteFolder as deleteFolder
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
 import { getTagList, bindTag, createTag, updateTag, deleteTag as deleteTagApi } from '../api/tag'
+import { getFileList, deleteFile } from '../api/file'
 
 // 导入拆分后的组件
 import LeftSidebar from '../components/sidebar/LeftSidebar.vue'
@@ -199,6 +207,11 @@ const tagDialogVisible = ref(false)
 const editingTag = ref(null)
 const tagForm = ref({ name: '' })
 
+// ===== 文件管理相关 =====
+const noteFiles = ref([])
+const allFiles = ref([])
+const filesLoading = ref(false)
+
 // ===== 用户信息 =====
 const userInfo = ref(null)
 
@@ -238,6 +251,7 @@ onMounted(() => {
   fetchAllFolders()
   fetchAllNotes()
   fetchAllTags()
+  fetchAllUserFiles()
 })
 
 onBeforeUnmount(() => {
@@ -367,6 +381,56 @@ const fetchNoteTags = async () => {
   }
 }
 
+// ===== 获取当前笔记的文件列表 =====
+const fetchNoteFiles = async () => {
+  const noteId = editingNote.value?.id
+  
+  filesLoading.value = true
+  try {
+    if (noteId) {
+      const data = await getFileList({ note_id: Number(noteId) })
+      noteFiles.value = Array.isArray(data) ? data : []
+    } else {
+      noteFiles.value = []
+    }
+  } catch (error) {
+    console.error('获取笔记文件列表失败:', error)
+    noteFiles.value = []
+  } finally {
+    filesLoading.value = false
+  }
+}
+
+// ===== 获取用户所有文件 =====
+const fetchAllUserFiles = async () => {
+  filesLoading.value = true
+  try {
+    const data = await getFileList({})
+    allFiles.value = Array.isArray(data) ? data : []
+  } catch (error) {
+    console.error('获取所有文件列表失败:', error)
+    allFiles.value = []
+  } finally {
+    filesLoading.value = false
+  }
+}
+
+// ===== 刷新文件列表 =====
+const handleFileRefresh = (viewMode = 'note') => {
+  if (viewMode === 'all') {
+    fetchAllUserFiles()
+  } else {
+    fetchNoteFiles()
+  }
+}
+
+// ===== 切换文件查看模式 =====
+const handleViewModeChange = (mode) => {
+  if (mode === 'all' && allFiles.value.length === 0) {
+    fetchAllUserFiles()
+  }
+}
+
 // ===== 搜索笔记 =====
 let searchDebounceTimer = null
 
@@ -438,6 +502,7 @@ const handleFolderClick = (folder) => {
   selectedFolderId.value = folder.id
   editingNote.value = null
   selectedNoteId.value = null
+  noteFiles.value = []
 }
 
 const handleFolderExpand = (folder) => {
@@ -475,11 +540,17 @@ const openNoteEditor = async (note) => {
     const data = await getNoteDetail({ note_id: note.id })
     editingNote.value = {
       ...data,
+      id: data.id || data.note_id,  // 确保 id 字段存在
       folder_id: data.folder_id || data.folderId
     }
     hasUnsavedChanges.value = false
     saveStatus.value = '已保存'
-    await fetchNoteTags()
+    
+    // 并行获取标签和文件列表
+    await Promise.all([
+      fetchNoteTags(),
+      fetchNoteFiles()
+    ])
 
     if (editingNote.value.folder_id) {
       const folder = allFolders.value.find(f => f.id === editingNote.value.folder_id)
@@ -515,17 +586,20 @@ const closeEditor = () => {
         editingNote.value = null
         selectedNoteId.value = null
         noteTags.value = []
+        noteFiles.value = []
       })
     }).catch(() => {
       hasUnsavedChanges.value = false
       editingNote.value = null
       selectedNoteId.value = null
       noteTags.value = []
+      noteFiles.value = []
     })
   } else {
     editingNote.value = null
     selectedNoteId.value = null
     noteTags.value = []
+    noteFiles.value = []
   }
 }
 
@@ -583,6 +657,7 @@ const handleDeleteNote = async () => {
     editingNote.value = null
     selectedNoteId.value = null
     noteTags.value = []
+    noteFiles.value = []
     await fetchAllNotes()
   } catch (error) {
     if (error !== 'cancel') {
@@ -687,6 +762,7 @@ const handleSaveNote = async () => {
         folder_id: newNote.folder_id || newNote.folderId
       }
       selectedNoteId.value = editingNote.value.id
+      noteFiles.value = []
       await fetchNoteTags()
     }
   } catch (error) {
@@ -800,6 +876,29 @@ const handleTagClick = async (tag) => {
   } catch (error) {
     console.error('标签绑定操作失败:', error)
   }
+}
+
+// ===== 文件操作 =====
+const handleDeleteFile = async (file) => {
+  try {
+    await deleteFile({ file_id: file.id })
+    ElMessage.success('文件删除成功')
+    await Promise.all([
+      fetchNoteFiles(),
+      fetchAllUserFiles()
+    ])
+  } catch (error) {
+    console.error('删除文件失败:', error)
+    ElMessage.error('删除文件失败')
+  }
+}
+
+const handleFileUploaded = async () => {
+  // 文件上传完成后刷新文件列表
+  await Promise.all([
+    fetchNoteFiles(),
+    fetchAllUserFiles()
+  ])
 }
 
 // ===== 用户操作 =====

@@ -35,6 +35,7 @@
           :language="'zh-CN'"
           :placeholder="'开始输入笔记内容...'"
           class="markdown-editor"
+          @onUploadImg="onUploadImg"
         />
       </div>
     </div>
@@ -45,6 +46,8 @@
 import { Delete, ArrowLeft } from '@element-plus/icons-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import { ElMessage } from 'element-plus'
+import { uploadFile, pollFileStatus } from '../../api/file'
 
 const props = defineProps({
   note: Object,
@@ -52,7 +55,7 @@ const props = defineProps({
   folderName: String
 })
 
-const emit = defineEmits(['update:title', 'update:content', 'input', 'back', 'delete'])
+const emit = defineEmits(['update:title', 'update:content', 'input', 'back', 'delete', 'file-uploaded'])
 
 // 工具栏配置
 const toolbars = [
@@ -76,18 +79,12 @@ const toolbars = [
   'table',
   'mermaid',
   'katex',
-  // '-',
-  // 'revoke',
-  // 'next',
-  // 'save',
   '=',
   'pageFullscreen',
-  // 'fullscreen',
   'preview',
   'previewOnly',
   'htmlPreview',
   'catalog',
-  // 'github',
   'fullscreen'
 ]
 
@@ -100,6 +97,77 @@ const handleContentChange = (value) => {
 const formatFullTime = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleString('zh-CN')
+}
+
+/**
+ * 处理图片/文件上传事件
+ * md-editor-v3 的 @onUploadImg 事件
+ * @param {Array<File>} files - 上传的文件列表
+ * @param {Function} callback - 上传完成后的回调函数，需要传入 URL 数组
+ */
+const onUploadImg = async (files, callback) => {
+  if (!files || files.length === 0) return
+
+  try {
+    // 并行上传所有文件
+    const uploadPromises = files.map(async (file) => {
+      try {
+        // 创建 FormData
+        const formData = new FormData()
+        formData.append('file', file)
+
+        // 关联当前笔记ID（如果存在）
+        const noteId = props.note?.id || null
+
+        // 1. 上传文件，获取 file_id
+        const uploadRes = await uploadFile(formData, noteId)
+        const fileId = uploadRes.file_id
+
+        if (!fileId) {
+          throw new Error('上传失败：未获取到文件ID')
+        }
+
+        ElMessage.info(`文件 "${file.name}" 上传中...`)
+
+        // 2. 轮询查询上传状态，直到完成
+        const statusRes = await pollFileStatus(fileId, {
+          interval: 1000,  // 每秒查询一次
+          maxAttempts: 60  // 最多轮询60秒
+        })
+
+        // 3. 返回文件的 URL
+        if (statusRes.url) {
+          ElMessage.success(`文件 "${file.name}" 上传成功`)
+          // 通知父组件文件上传完成
+          emit('file-uploaded', statusRes)
+          return statusRes.url
+        } else {
+          throw new Error('上传失败：未获取到文件URL')
+        }
+      } catch (error) {
+        console.error('文件上传失败:', error)
+        ElMessage.error(error.message || `文件 "${file.name}" 上传失败`)
+        // 返回 null 表示该文件上传失败
+        return null
+      }
+    })
+
+    // 等待所有上传完成
+    const urls = await Promise.all(uploadPromises)
+
+    // 过滤掉上传失败的（null 值）
+    const validUrls = urls.filter(url => url !== null)
+
+    if (validUrls.length > 0) {
+      // 4. 调用 callback，将 URL 数组回传给编辑器
+      callback(validUrls)
+    } else {
+      ElMessage.error('所有文件上传失败')
+    }
+  } catch (error) {
+    console.error('批量上传失败:', error)
+    ElMessage.error('文件上传过程中发生错误')
+  }
 }
 </script>
 

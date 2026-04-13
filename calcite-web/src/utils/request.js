@@ -24,7 +24,8 @@ request.interceptors.request.use(
     }
     // 开发环境下打印请求信息
     if (import.meta.env.DEV) {
-      console.log('请求:', config.method?.toUpperCase(), config.url, config.data)
+      const logData = config.method?.toLowerCase() === 'get' ? config.params : config.data
+      console.log('请求:', config.method?.toUpperCase(), config.url, logData)
     }
     return config
   },
@@ -40,7 +41,8 @@ request.interceptors.response.use(
     
     // 开发环境下打印响应信息
     if (import.meta.env.DEV) {
-      console.log('响应:', response.config.url, res)
+      const requestParams = response.config.method?.toLowerCase() === 'get' ? response.config.params : response.config.data
+      console.log('响应:', response.config.url, '请求参数:', requestParams, '响应数据:', res)
     }
     
     // 检查响应数据格式

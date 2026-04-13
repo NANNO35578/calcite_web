@@ -22,30 +22,38 @@
 
 ### API 总览
 
-| 接口                | 方法 | 说明      | 附加参数 |
-| ------------------ | ---- | -------- | -------- |
-| /api/auth/register | POST | 用户注册         |         |
-| /api/auth/login    | POST | 用户登录         |         |
-| /api/auth/logout   | POST | 退出登录         |         |
-| /api/user/profile  | GET  | 获取用户信息      |         |
-|                    |      |                 |         |
-| /api/note/create   | POST | 新建笔记         |         |
-| /api/note/update   | POST | 更新笔记         |         |
-| /api/note/delete   | POST | 删除笔记         |         |
-| /api/note/list     | GET  | 获取笔记列表      | folder_id, tag_ids |
-| /api/note/detail   | GET  | 获取笔记详情      |         |
-| /api/note/search   | GET  | 全文搜索         |         |
-|                    |      |                 |         |
-| /api/tag/create    | POST | 创建标签         |         |
-| /api/tag/list      | GET  | 获取标签列表      |    note_id     |
-| /api/tag/bind      | POST | 绑定/解除笔记标签 |         |
-| /api/tag/delete    | POST | 删除某个标签   |                    |
-| /api/tag/update    | POST | 更新某个标签   |                     | 
-|                    |      |                |
-| /api/folder/create | POST | 创建文件夹       |         |
-| /api/folder/list   | GET  | 获取文件夹列表    |   folder_id      |
-| /api/folder/update | POST | 更新某个文件夹  |                     |
-| /api/folder/delete | POST | 删除某个文件夹以及包含的笔记 |           |
+| 接口                | 方法 | 说明      |
+| ------------------ | ---- | -------- |
+| /api/auth/register | POST | [用户注册](#11-用户注册-post-apiauthregister)         |
+| /api/auth/login    | POST | [用户登录](#12-用户登录-post-apiauthlogin)         |
+| /api/auth/logout   | POST | [退出登录](#13-退出登录-post-apiauthlogout)         |
+| /api/user/profile  | GET  | [获取用户信息](#14-获取用户信息-get-apiuserprofile)      |
+|                    |      |                 |
+| /api/note/create   | POST | [新建笔记](#21-创建笔记-post-apinotecreate)         |
+| /api/note/update   | POST | [更新笔记](#22-更新笔记-post-apinoteupdate)         |
+| /api/note/delete   | POST | [删除笔记](#23-删除笔记-post-apinotedelete)         |
+| /api/note/list     | GET  | [获取笔记列表](#24-获取笔记列表-get-apinotelist)      |
+| /api/note/detail   | GET  | [获取笔记详情](#25-获取笔记详情-get-apinotedetail)      |
+| /api/note/search   | GET  | [全文搜索](#26-全文搜索笔记-get-apinotesearch)         |
+|                    |      |                 |
+| /api/tag/create    | POST | [创建标签](#31-创建标签-post-apitagcreate)           |
+| /api/tag/list      | GET  | [获取标签列表](#32-获取标签列表-get-apitaglist)         |
+| /api/tag/bind      | POST | [绑定/解除笔记标签](#33-绑定笔记标签-post-apitagbind)   |
+| /api/tag/update    | POST | [更新标签](#34-更新标签-post-apitagupdate)           |
+| /api/tag/delete    | POST | [删除标签](#35-删除标签-post-apitagdelete)           |
+| /api/folder/create | POST | [创建文件夹](#36-创建文件夹-post-apifoldercreate)           |
+| /api/folder/list   | GET  | [获取文件夹列表](#39-获取文件夹列表-get-apifolderlist)         |
+| /api/folder/update | POST | [更新文件夹](#37-更新文件夹-post-apifolderupdate)           |
+| /api/folder/delete | POST | [删除文件夹](#38-删除文件夹-post-apifolderdelete)           |
+|                    |      |                 |
+| /api/file/upload   | POST | [上传文件到MinIO](#41-上传文件-post-apifileupload)        |
+| /api/file/list     | GET  | [获取文件列表](#42-获取文件列表-get-apifilelist)             |
+| /api/file/delete   | POST | [删除文件(MinIO+数据库)](#43-删除文件-post-apifiledelete) |
+| /api/file/status   | GET  | [查询文件上传状态](#44-查询文件上传状态-get-apifilestatus)          |
+| /api/file/info     | GET  | [获取单个文件详情](#45-获取单个文件详情-get-apifileinfo)          |
+|                    |      |                 |
+| /api/ocr/recognize | POST | [上传文件进行OCR识别,生成新笔记](#461-提交ocr任务-post-apiocrrecognize)   |
+| /api/ocr/status    | GET  | [查询OCR处理状态](#462-查询ocr状态-get-apiocrstatus)         |
 
 ---
 
@@ -370,6 +378,50 @@ Header: `Authorization: Bearer {token}`
 - `score`: 匹配相关度分数
 - 响应不包含完整 `content` 字段，需要详情请调用 `/api/note/detail`
 
+---
+
+## Elasticsearch 集成说明
+
+### 数据同步机制
+
+系统采用 **"先写数据库，后异步同步ES"** 的策略：
+
+| 操作   | MariaDB                     | Elasticsearch              |
+| ------ | --------------------------- | -------------------------- |
+| 创建   | 先插入记录，获取主键ID       | 异步索引文档，ID与数据库一致 |
+| 更新   | 先更新记录                   | 异步部分更新文档            |
+| 删除   | 标记 `is_deleted=1`（软删除）| 异步删除文档                |
+| 搜索   | 不参与查询                   | 执行全文检索，返回匹配ID列表 |
+
+### ES索引结构
+
+索引名称：`notes`
+
+文档字段映射：
+| 字段        | 类型       | 说明                    |
+| ----------- | ---------- | ---------------------- |
+| user_id     | long       | 用户ID，用于权限过滤     |
+| title       | text       | 标题，带keyword子字段    |
+| content     | text       | 内容                    |
+| summary     | text       | 摘要                    |
+| tags        | keyword    | 标签数组                |
+| updated_at  | date       | 更新时间                |
+
+### 搜索流程
+
+1. 客户端发起搜索请求（带关键词）
+2. 服务端在ES中执行多字段匹配查询（multi_match）
+3. 应用用户ID过滤，确保只能搜索自己的笔记
+4. 获取匹配的文档ID列表及高亮片段
+5. 根据ID列表从MariaDB批量查询完整记录
+6. 按ES返回顺序排序，合并高亮信息
+7. 返回给客户端
+
+### 容错处理
+
+- ES连接失败不影响数据库写入操作
+- ES操作失败会记录错误日志，不会阻塞主流程
+- 搜索时如果ES不可用，返回空结果
 
 ---
 
@@ -660,6 +712,424 @@ Header: `Authorization: Bearer {token}`
 
 ---
 
+
+## 4. 文件管理 API
+
+| 接口                | 方法   | 说明                    | 附加参数           |
+| ------------------ | ---- | ---------------------- | ----------------- |
+| /api/file/upload   | POST | 上传文件到 MinIO        | 支持 multipart      |
+| /api/file/list     | GET  | 获取文件列表             | user_id, note_id    |
+| /api/file/delete   | POST | 删除文件（MinIO+数据库） |                    |
+| /api/file/status   | GET  | 查询文件上传状态          | file_id             |
+| /api/file/info     | GET  | 获取单个文件详情          | file_id             |
+
+**鉴权要求：** 所有文件接口均需通过 Token 鉴权
+
+### 文件存储架构
+
+```
+┌─────────────┐      ┌─────────────┐      ┌─────────────┐
+│   前端上传   │ ──▶ │   Drogon    │ ──▶ │   MariaDB   │
+│  (multipart)│      │  (异步处理)  │      │ (元数据记录) │
+└─────────────┘      └──────┬──────┘      └─────────────┘
+                            │
+                            ▼
+                     ┌─────────────┐
+                     │    MinIO    │
+                     │(对象存储S3)  │
+                     │ notes-files │
+                     └─────────────┘
+```
+
+**上传流程：**
+1. 前端通过 multipart/form-data 上传文件
+2. 后端接收文件，创建数据库记录（status = processing）
+3. 返回 file_id，后台异步上传文件到 MinIO
+4. 上传成功：更新 url、status = done
+5. 上传失败：更新 status = failed
+
+**MinIO 配置：**
+- endpoint: `http://127.0.0.1:9000`
+- bucket: `notes-files`
+- object key 规则: `userId/yyyy/mm/dd/uuid.ext`
+
+### 4.1 上传文件 POST /api/file/upload
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+Content-Type: `multipart/form-data`
+
+**请求参数：**
+| 参数     | 类型   | 必填 | 说明                      |
+| -------- | ------ | ---- | ------------------------- |
+| file     | file   | 是   | 要上传的文件               |
+| note_id  | int64  | 否   | 关联的笔记ID（可选）       |
+
+**请求示例（curl）：**
+```bash
+curl -X POST http://localhost:8080/api/file/upload \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -F "file=@/path/to/document.pdf" \
+  -F "note_id=123"
+```
+
+**响应示例（成功，异步上传模式）：**
+```json
+{
+  "code": 0,
+  "message": "文件上传已提交",
+  "data": {
+    "file_id": 1001,
+    "status": "processing"
+  }
+}
+```
+
+**说明：**
+- 接口采用异步上传模式，立即返回 file_id 和 processing 状态
+- 后台自动完成 MinIO 上传，完成后更新状态为 done
+- 可通过 `/api/file/status` 接口轮询查询上传状态
+
+### 4.2 获取文件列表 GET /api/file/list
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+
+**请求参数：**
+| 参数     | 类型   | 必填 | 说明                              |
+| -------- | ------ | ---- | --------------------------------- |
+| user_id  | int64  | 否   | 用户ID（不传则使用当前登录用户）   |
+| note_id  | int64  | 否   | 笔记ID过滤（0表示未关联笔记的文件）|
+| status   | string | 否   | 状态过滤：processing/done/failed   |
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "获取文件列表成功",
+  "data": [
+    {
+      "id": 1001,
+      "user_id": 1,
+      "note_id": 123,
+      "file_name": "document.pdf",
+      "file_type": "application/pdf",
+      "file_size": 1048576,
+      "file_size_formatted": "1.00 MB",
+      "object_key": "1/2026/04/08/a1b2c3d4.pdf",
+      "url": "http://127.0.0.1:9000/notes-files/1/2026/04/08/a1b2c3d4.pdf",
+      "status": "done",
+      "created_at": "2026-04-08 10:30:00",
+      "updated_at": "2026-04-08 10:30:05"
+    },
+    {
+      "id": 1002,
+      "user_id": 1,
+      "note_id": 0,
+      "file_name": "image.png",
+      "file_type": "image/png",
+      "file_size": 204800,
+      "file_size_formatted": "200.00 KB",
+      "object_key": "1/2026/04/08/e5f6g7h8.png",
+      "url": "",
+      "status": "processing",
+      "created_at": "2026-04-08 10:35:00",
+      "updated_at": "2026-04-08 10:35:00"
+    }
+  ]
+}
+```
+
+**说明：**
+- 默认按 created_at 降序排列
+- 返回结果中 file_size_formatted 为格式化后的大小（如 "1.00 MB"）
+- status 为 processing 时 url 可能为空，需等待上传完成
+
+### 4.3 删除文件 POST /api/file/delete
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+
+**请求示例：**
+```json
+{
+  "file_id": 1001
+}
+```
+
+**请求参数：**
+| 参数    | 类型  | 必填 | 说明     |
+| ------- | ----- | ---- | -------- |
+| file_id | int64 | 是   | 文件ID   |
+
+**响应示例（成功）：**
+```json
+{
+  "code": 0,
+  "message": "删除文件成功",
+  "data": {
+    "minio_deleted": true
+  }
+}
+```
+
+**响应示例（MinIO删除失败但数据库已清理）：**
+```json
+{
+  "code": 0,
+  "message": "删除文件成功",
+  "data": {
+    "minio_deleted": false,
+    "minio_error": "Object not found"
+  }
+}
+```
+
+**说明：**
+- 删除操作会同时清理 MinIO 存储和数据库记录
+- 即使 MinIO 删除失败，数据库记录也会被清理
+- 只能删除自己上传的文件
+
+### 4.4 查询文件上传状态 GET /api/file/status
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+
+**请求参数：**
+| 参数    | 类型   | 必填 | 说明   |
+| ------- | ------ | ---- | ------ |
+| file_id | string | 是   | 文件ID |
+
+**响应示例（processing 状态）：**
+```json
+{
+  "code": 0,
+  "message": "获取文件状态成功",
+  "data": {
+    "file_id": 1002,
+    "file_name": "image.png",
+    "status": "processing",
+    "file_size": 204800
+  }
+}
+```
+
+**响应示例（done 状态）：**
+```json
+{
+  "code": 0,
+  "message": "获取文件状态成功",
+  "data": {
+    "file_id": 1001,
+    "file_name": "document.pdf",
+    "status": "done",
+    "url": "http://127.0.0.1:9000/notes-files/1/2026/04/08/a1b2c3d4.pdf",
+    "file_size": 1048576
+  }
+}
+```
+
+**响应示例（failed 状态）：**
+```json
+{
+  "code": 0,
+  "message": "获取文件状态成功",
+  "data": {
+    "file_id": 1003,
+    "file_name": "large.zip",
+    "status": "failed",
+    "file_size": 0
+  }
+}
+```
+
+**说明：**
+- 可用于轮询检查异步上传的状态
+- status 为 done 时 url 字段才包含有效值
+- 只能查询自己上传的文件状态
+
+### 4.5 获取单个文件详情 GET /api/file/info
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+
+**请求参数：**
+| 参数    | 类型   | 必填 | 说明   |
+| ------- | ------ | ---- | ------ |
+| file_id | string | 是   | 文件ID |
+
+**响应示例：**
+```json
+{
+  "code": 0,
+  "message": "获取文件详情成功",
+  "data": {
+    "id": 1001,
+    "user_id": 1,
+    "note_id": 123,
+    "file_name": "document.pdf",
+    "file_type": "application/pdf",
+    "file_size": 1048576,
+    "file_size_formatted": "1.00 MB",
+    "object_key": "1/2026/04/08/a1b2c3d4.pdf",
+    "url": "http://127.0.0.1:9000/notes-files/1/2026/04/08/a1b2c3d4.pdf",
+    "status": "done",
+    "created_at": "2026-04-08 10:30:00",
+    "updated_at": "2026-04-08 10:30:05"
+  }
+}
+```
+
+### 4.6 OCR 图片转文本 API
+
+| 接口                 | 方法   | 说明                   |
+| -------------------- | ---- | ---------------------- |
+| /api/ocr/recognize   | POST | 上传文件进行OCR识别     |
+| /api/ocr/status      | GET  | 查询OCR处理状态         |
+
+**OCR处理流程：**
+1. 前端通过 multipart/form-data 上传图片/PDF文件
+2. 后端接收文件，创建 file_resource 记录（status = processing）
+3. 调用第三方OCR API进行文字识别
+4. 根据识别结果自动创建笔记（标题使用文件名，内容为识别的markdown文本）
+5. 异步上传原始文件到 MinIO
+6. 上传成功：更新 file_resource 的 note_id、url、status = done
+7. 上传失败：更新 status = failed
+
+**支持的文件格式：**
+- 图片：jpg, jpeg, png, bmp, webp
+- 文档：pdf
+
+#### 4.6.1 提交OCR任务 POST /api/ocr/recognize
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+Content-Type: `multipart/form-data`
+
+**请求参数：**
+| 参数   | 类型   | 必填 | 说明                      |
+| ------ | ------ | ---- | ------------------------- |
+| file   | file   | 是   | 要识别的文件（图片或PDF） |
+
+**请求示例（curl）：**
+```bash
+curl -X POST http://localhost:8080/api/ocr/recognize \
+  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
+  -F "file=@/path/to/document.pdf"
+```
+
+**响应示例（成功，异步处理模式）：**
+```json
+{
+  "code": 0,
+  "message": "OCR任务已提交",
+  "data": {
+    "file_id": 1001,
+    "status": "processing"
+  }
+}
+```
+
+**响应示例（不支持的文件类型）：**
+```json
+{
+  "code": 1,
+  "message": "不支持的文件类型，仅支持: JPG, PNG, BMP, WEBP, PDF"
+}
+```
+
+**说明：**
+- 接口采用异步处理模式，立即返回 file_id 和 processing 状态
+- 后台自动完成 OCR 识别、笔记创建和 MinIO 上传
+- 可通过 `/api/ocr/status` 接口轮询查询处理状态
+- 识别成功后，可通过返回的 note_id 获取创建的笔记
+
+#### 4.6.2 查询OCR状态 GET /api/ocr/status
+
+**请求方式：**
+Header: `Authorization: Bearer {token}`
+
+**请求参数：**
+| 参数    | 类型   | 必填 | 说明   |
+| ------- | ------ | ---- | ------ |
+| file_id | string | 是   | 文件ID |
+
+**响应示例（processing 状态）：**
+```json
+{
+  "code": 0,
+  "message": "获取OCR状态成功",
+  "data": {
+    "file_id": 1001,
+    "file_name": "document.pdf",
+    "status": "processing",
+    "file_size": 1048576,
+    "file_size_formatted": "1.00 MB",
+    "created_at": "2026-04-08 10:30:00",
+    "updated_at": "2026-04-08 10:30:00"
+  }
+}
+```
+
+**响应示例（done 状态，处理完成）：**
+```json
+{
+  "code": 0,
+  "message": "获取OCR状态成功",
+  "data": {
+    "file_id": 1001,
+    "file_name": "document.pdf",
+    "status": "done",
+    "note_id": 123,
+    "url": "http://127.0.0.1:9000/notes-files/1/2026/04/08/a1b2c3d4.pdf",
+    "file_size": 1048576,
+    "file_size_formatted": "1.00 MB",
+    "created_at": "2026-04-08 10:30:00",
+    "updated_at": "2026-04-08 10:30:15"
+  }
+}
+```
+
+**响应示例（failed 状态，处理失败）：**
+```json
+{
+  "code": 0,
+  "message": "获取OCR状态成功",
+  "data": {
+    "file_id": 1002,
+    "file_name": "corrupted.pdf",
+    "status": "failed",
+    "file_size": 0,
+    "file_size_formatted": "0.00 B",
+    "created_at": "2026-04-08 10:35:00",
+    "updated_at": "2026-04-08 10:35:05"
+  }
+}
+```
+
+**说明：**
+- 可用于轮询检查异步OCR处理的状态
+- `status` 为 `done` 时，响应中包含 `note_id`，表示笔记已成功创建
+- `status` 为 `failed` 时，表示OCR识别或后续处理失败
+- 只有文件所有者可以查询该文件的状态
+
+
+## 5. 同步 API（双端重点）
+
+| 接口             | 方法   | 说明     |
+| -------------- | ---- | ------ |
+| /api/sync/pull | GET  | 拉取最新数据 |
+| /api/sync/push | POST | 上传变更   |
+
+参数示例：
+
+```json
+{
+  "last_sync_time": "2025-01-01 12:00:00"
+}
+```
+
+---
 
 
 ## 错误码说明
