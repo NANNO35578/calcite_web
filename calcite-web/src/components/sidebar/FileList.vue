@@ -3,19 +3,38 @@
     <!-- 列表头部 -->
     <div class="file-list-header">
       <div class="header-left">
-        <span class="header-title">
-          {{ showAllFiles ? '所有文件' : '当前笔记文件' }}
-        </span>
+        <span class="header-title">所有文件</span>
         <span class="file-count" v-if="displayFiles.length > 0">({{ displayFiles.length }})</span>
       </div>
-      <el-button
-        type="primary"
-        link
-        size="small"
-        @click="toggleViewMode"
-      >
-        {{ showAllFiles ? '只看当前笔记' : '查看全部' }}
-      </el-button>
+      <div class="header-right">
+        <!-- 状态过滤器 -->
+        <el-select
+          v-model="statusFilter"
+          placeholder="筛选状态"
+          clearable
+          size="small"
+          class="filter-select"
+          @change="handleFilterChange"
+        >
+          <el-option label="上传中" value="processing" />
+          <el-option label="已完成" value="done" />
+          <el-option label="失败" value="failed" />
+          <!-- <el-option label="当前笔记" value="current note" /> -->
+        </el-select>
+
+        <!-- 刷新按钮 -->
+        <el-tooltip content="刷新列表" placement="top">
+          <el-button
+            type="primary"
+            link
+            size="small"
+            :icon="Refresh"
+            @click="handleRefresh"
+            :loading="loading"
+            class="refresh-btn"
+          />
+        </el-tooltip>
+      </div>
     </div>
 
     <!-- 加载状态 -->
@@ -84,20 +103,6 @@
         </div>
       </div>
     </div>
-
-    <!-- 刷新按钮 -->
-    <div class="file-list-footer">
-      <el-button
-        type="primary"
-        link
-        size="small"
-        :icon="Refresh"
-        @click="$emit('refresh', showAllFiles ? 'all' : 'note')"
-        :loading="loading"
-      >
-        刷新列表
-      </el-button>
-    </div>
   </div>
 </template>
 
@@ -115,26 +120,45 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  noteId: {
+    type: Number,
+    default: null
+  },
   loading: {
     type: Boolean,
     default: false
   }
 })
 
-const emit = defineEmits(['delete', 'refresh', 'view-mode-change'])
+const emit = defineEmits(['delete', 'refresh'])
 
-// 是否显示所有文件
-const showAllFiles = ref(false)
+// 状态过滤器
+const statusFilter = ref('')
 
-// 根据当前模式显示对应的文件列表
+// 根据过滤条件显示对应的文件列表
 const displayFiles = computed(() => {
-  return showAllFiles.value ? props.allFiles : props.files
+  const fileList = props.allFiles
+
+  if (!statusFilter.value) {
+    return fileList
+  }
+
+  // if (statusFilter.value === 'current note') {
+  //   return fileList.filter(f => f.note_id === props.noteId)
+  // }
+
+  return fileList.filter(f => f.status === statusFilter.value)
 })
 
-// 切换查看模式
-const toggleViewMode = () => {
-  showAllFiles.value = !showAllFiles.value
-  emit('view-mode-change', showAllFiles.value ? 'all' : 'note')
+// 处理过滤变化
+const handleFilterChange = (value) => {
+  // 过滤逻辑已在 computed 中处理
+  console.log('过滤条件:', value)
+}
+
+// 刷新列表
+const handleRefresh = () => {
+  emit('refresh', 'all')
 }
 
 // 判断是否为图片类型
@@ -215,12 +239,15 @@ const handleDelete = (file) => {
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-primary);
   flex-shrink: 0;
+  gap: 12px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .header-title {
@@ -232,6 +259,31 @@ const handleDelete = (file) => {
 .file-count {
   font-size: 12px;
   color: var(--text-muted);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.filter-select {
+  width: 130px;
+}
+
+.filter-select :deep(.el-input__wrapper) {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-secondary);
+  box-shadow: none;
+}
+
+.filter-select :deep(.el-input__inner) {
+  color: var(--text-primary);
+}
+
+.refresh-btn {
+  padding: 4px !important;
 }
 
 .loading-state {
@@ -389,14 +441,6 @@ const handleDelete = (file) => {
 .action-btn {
   padding: 4px 6px !important;
   height: auto !important;
-}
-
-.file-list-footer {
-  padding: 8px 16px;
-  border-top: 1px solid var(--border-primary);
-  display: flex;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 /* 滚动条样式 */

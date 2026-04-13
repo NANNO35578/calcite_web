@@ -1,115 +1,299 @@
 <template>
-  <div class="tag-list">
-    <div class="section-title">{{ title }}</div>
-    <div 
-      v-for="tag in tags" 
-      :key="tag.id" 
-      class="tag-item" 
-      :class="{ bound: isBound && isBound(tag.id) }"
-      @click="$emit('click', tag)"
-    >
-      <span class="tag-name">{{ tag.name }}</span>
-      <el-dropdown 
-        v-if="showActions" 
-        @command="(cmd) => $emit('action', cmd, tag)" 
-        trigger="click"
-        @click.stop
-      >
-        <el-icon class="tag-more">
-          <MoreFilled />
-        </el-icon>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item command="edit">编辑</el-dropdown-item>
-            <el-dropdown-item command="unbind">解除绑定</el-dropdown-item>
-            <el-dropdown-item command="delete" divided>删除标签</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+  <div class="tag-list-container">
+    <!-- 标签列表头部 -->
+    <div class="tag-list-header">
+      <span class="tag-title">{{ title }}</span>
+      <div v-if="editable" class="header-actions">
+        <el-tooltip :content="manageMode ? '完成管理' : '管理标签'" placement="top">
+          <el-button
+            type="primary"
+            link
+            size="small"
+            :icon="manageMode ? Check : EditPen"
+            @click="manageMode = !manageMode"
+          />
+        </el-tooltip>
+      </div>
     </div>
-    <div v-if="tags.length === 0" class="empty-tags">
-      {{ emptyText }}
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="tag-loading">
+      <el-icon class="loading-icon"><Loading /></el-icon>
+    </div>
+
+    <!-- 空状态 -->
+    <div v-else-if="!tags || tags.length === 0 && !inputVisible" class="tag-empty">
+      <span>{{ emptyText }}</span>
+    </div>
+
+    <!-- 标签列表 -->
+    <div v-else class="tag-list">
+      <div
+        v-for="tag in tags"
+        :key="tag.id || tag"
+        class="tag-item-wrapper"
+      >
+        <el-tag
+          :closable="(closable || manageMode) && !isEditing(tag)"
+          :disable-transitions="false"
+          @close="handleClose(tag)"
+          @click="!manageMode && handleClick(tag)"
+          class="tag-item"
+          :class="{ 'is-editing': isEditing(tag) }"
+        >
+          {{ tag.name || tag }}
+        </el-tag>
+
+        <!-- 编辑按钮 -->
+        <el-button
+          v-if="manageMode && !isEditing(tag)"
+          type="primary"
+          link
+          size="small"
+          :icon="EditPen"
+          @click="startEdit(tag)"
+          class="edit-btn"
+        />
+
+        <!-- 编辑输入框 -->
+        <el-input
+          v-if="manageMode && isEditing(tag)"
+          ref="editInputRef"
+          v-model="editingName"
+          class="tag-edit-input"
+          size="small"
+          @keyup.enter="confirmEdit"
+          @blur="confirmEdit"
+        />
+      </div>
+
+      <!-- 添加标签输入框 -->
+      <el-input
+        v-if="inputVisible"
+        ref="InputRef"
+        v-model="inputValue"
+        class="tag-input"
+        size="small"
+        @keyup.enter="handleInputConfirm"
+        @blur="handleInputConfirm"
+      />
+
+      <!-- 新标签按钮 -->
+      <el-button
+        v-else
+        class="button-new-tag"
+        size="small"
+        @click="showInput"
+      >
+        + New Tag
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup>
-import { MoreFilled } from '@element-plus/icons-vue'
+import { ref, nextTick } from 'vue'
+import { Loading, EditPen, Check } from '@element-plus/icons-vue'
 
-defineProps({
+const props = defineProps({
   tags: Array,
-  title: String,
+  title: {
+    type: String,
+    default: 'Tags'
+  },
   emptyText: {
     type: String,
     default: '暂无标签'
   },
-  showActions: Boolean,
-  isBound: Function
+  closable: {
+    type: Boolean,
+    default: true
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  editable: {
+    type: Boolean,
+    default: false
+  }
 })
 
-defineEmits(['click', 'action'])
+const emit = defineEmits(['click', 'create', 'delete', 'edit'])
+
+const inputValue = ref('')
+const inputVisible = ref(false)
+const InputRef = ref()
+
+const manageMode = ref(false)
+const editingTag = ref(null)
+const editingName = ref('')
+const editInputRef = ref()
+
+const isEditing = (tag) => {
+  return editingTag.value && editingTag.value.id === tag.id
+}
+
+const startEdit = (tag) => {
+  editingTag.value = tag
+  editingName.value = tag.name || ''
+  nextTick(() => {
+    editInputRef.value?.input?.focus()
+  })
+}
+
+const confirmEdit = () => {
+  if (editingTag.value && editingName.value && editingName.value !== editingTag.value.name) {
+    emit('edit', { tag: editingTag.value, newName: editingName.value })
+  }
+  editingTag.value = null
+  editingName.value = ''
+}
+
+const handleClose = (tag) => {
+  emit('delete', tag)
+}
+
+const handleClick = (tag) => {
+  emit('click', tag)
+}
+
+const showInput = () => {
+  inputVisible.value = true
+  nextTick(() => {
+    InputRef.value?.input?.focus()
+  })
+}
+
+const handleInputConfirm = () => {
+  if (inputValue.value) {
+    emit('create', inputValue.value)
+  }
+  inputVisible.value = false
+  inputValue.value = ''
+}
 </script>
 
 <style scoped>
-.tag-list {
+.tag-list-container {
   flex: 1;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   padding: 12px 16px;
   margin-bottom: 16px;
   min-height: 0;
 }
 
-.section-title {
-  color: var(--text-secondary);
-  font-size: 12px;
-  text-transform: uppercase;
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.tag-item {
+.tag-list-header {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 4px;
-  background-color: var(--component-tag-bg);
-  position: relative;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
-.tag-item:hover {
-  background-color: var(--bg-hover);
-}
-
-.tag-item.bound {
-  background-color: var(--component-tag-bg-bound);
-}
-
-.tag-item.bound .tag-name {
-  color: var(--component-tag-text-bound);
-}
-
-.tag-name {
-  flex: 1;
-  color: var(--component-tag-text);
+.tag-title {
   font-size: 14px;
-}
-
-.tag-more {
-  color: var(--text-muted);
-  padding: 2px;
-}
-
-.tag-item:hover .tag-more {
+  font-weight: 600;
   color: var(--text-primary);
 }
 
-.empty-tags {
-  text-align: center;
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-loading {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.tag-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
   color: var(--text-muted);
-  padding: 12px;
   font-size: 13px;
+}
+
+.tag-list {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.tag-item-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tag-item {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.edit-btn {
+  padding: 2px !important;
+  height: auto !important;
+}
+
+.tag-edit-input {
+  width: 100px;
+  max-width: 120px;
+}
+
+.button-new-tag {
+  height: 24px;
+  padding: 0 8px;
+  line-height: 22px;
+  font-size: 12px;
+}
+
+.tag-input {
+  width: 100px;
+  max-width: 120px;
+}
+
+/* 滚动条样式 */
+.tag-list::-webkit-scrollbar {
+  width: 4px;
+}
+
+.tag-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.tag-list::-webkit-scrollbar-thumb {
+  background: var(--component-scroll-thumb);
+  border-radius: 2px;
+}
+
+.tag-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 </style>

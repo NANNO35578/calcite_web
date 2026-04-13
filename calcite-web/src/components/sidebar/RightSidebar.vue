@@ -6,41 +6,26 @@
     <!-- 文件列表面板 -->
     <div v-show="activePanel === 'files'" class="panel-container">
       <FileList
-        :files="files"
         :all-files="allFiles"
+        :note-id="editingNote?.id"
         :loading="filesLoading"
         @delete="$emit('file-delete', $event)"
-        @refresh="$emit('file-refresh', $event)"
-        @view-mode-change="$emit('view-mode-change', $event)"
+        @refresh="$emit('file-refresh')"
       />
     </div>
 
     <!-- 标签管理面板 -->
     <div v-show="activePanel === 'tags'" class="panel-container">
-      <div class="sidebar-toolbar">
-        <span class="sidebar-title">标签</span>
-        <el-tooltip content="添加标签" placement="bottom">
-          <el-button
-            type="primary"
-            size="small"
-            :icon="DocumentAdd"
-            @click="$emit('create-tag')"
-            class="icon-btn"
-            circle
-          />
-        </el-tooltip>
-      </div>
-
-      <div class="divider"></div>
-
       <!-- 当前笔记的标签 -->
       <TagList
         v-if="editingNote"
         :tags="noteTags"
         title="当前笔记标签"
         empty-text="暂无标签"
-        :show-actions="true"
-        @action="handleTagAction"
+        :loading="tagsLoading"
+        @click="handleTagClick"
+        @create="handleCreateTagInline"
+        @delete="handleTagDelete"
       />
 
       <!-- 所有标签 -->
@@ -48,8 +33,13 @@
         :tags="allTags"
         title="所有标签"
         empty-text="暂无标签"
-        :is-bound="isTagBound"
+        :loading="tagsLoading"
+        :closable="false"
+        :editable="true"
         @click="handleTagClick"
+        @create="handleCreateTagInline"
+        @delete="handleTagDeleteAll"
+        @edit="handleTagEdit"
       />
     </div>
   </div>
@@ -57,7 +47,6 @@
 
 <script setup>
 import { ref } from 'vue'
-import { DocumentAdd } from '@element-plus/icons-vue'
 import TagList from './TagList.vue'
 import RightToolbar from './RightToolbar.vue'
 import FileList from './FileList.vue'
@@ -66,11 +55,6 @@ const props = defineProps({
   allTags: Array,
   noteTags: Array,
   editingNote: Object,
-  isTagBound: Function,
-  files: {
-    type: Array,
-    default: () => []
-  },
   allFiles: {
     type: Array,
     default: () => []
@@ -78,29 +62,49 @@ const props = defineProps({
   filesLoading: {
     type: Boolean,
     default: false
+  },
+  tagsLoading: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits([
   'create-tag',
-  'tag-action',
   'tag-click',
+  'tag-delete',
+  'tag-edit',
+  'tag-delete-all',
   'file-delete',
-  'file-refresh',
-  'view-mode-change'
+  'file-refresh'
 ])
 
 // 当前激活的面板: 'files' 或 'tags'
 const activePanel = ref('tags')
 
-// 处理标签操作，添加 editingNote 信息
-const handleTagAction = (event) => {
-  emit('tag-action', event)
-}
-
-// 处理标签点击，添加 editingNote 信息
+// 处理标签点击
 const handleTagClick = (tag) => {
   emit('tag-click', tag)
+}
+
+// 处理行内创建标签
+const handleCreateTagInline = (name) => {
+  emit('create-tag', name)
+}
+
+// 处理当前笔记标签删除（解绑）
+const handleTagDelete = (tag) => {
+  emit('tag-delete', tag)
+}
+
+// 处理所有标签中的编辑
+const handleTagEdit = (payload) => {
+  emit('tag-edit', payload)
+}
+
+// 处理所有标签中的删除（真正删除标签）
+const handleTagDeleteAll = (tag) => {
+  emit('tag-delete-all', tag)
 }
 </script>
 
@@ -118,36 +122,5 @@ const handleTagClick = (tag) => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-.sidebar-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  height: 40px;
-  box-sizing: border-box;
-  border-bottom: 1px solid var(--border-primary);
-  flex-shrink: 0;
-}
-
-.sidebar-title {
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.icon-btn {
-  font-size: 16px;
-}
-
-.icon-btn:hover {
-  transform: scale(1.05);
-}
-
-.divider {
-  height: 1px;
-  background-color: var(--border-primary);
-  margin: 0 12px;
 }
 </style>

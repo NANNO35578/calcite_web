@@ -84,16 +84,16 @@
           :all-tags="allTags"
           :note-tags="noteTags"
           :editing-note="editingNote"
-          :is-tag-bound="isTagBound"
-          :files="noteFiles"
           :all-files="allFiles"
           :files-loading="filesLoading"
-          @create-tag="handleCreateTag"
-          @tag-action="handleTagAction"
+          :tags-loading="tagsLoading"
+          @create-tag="handleCreateTagInline"
           @tag-click="handleTagClick"
+          @tag-delete="handleTagDelete"
+          @tag-edit="handleTagEdit"
+          @tag-delete-all="handleTagDeleteAll"
           @file-delete="handleDeleteFile"
           @file-refresh="handleFileRefresh"
-          @view-mode-change="handleViewModeChange"
         />
       </el-splitter-panel>
     </el-splitter>
@@ -148,7 +148,7 @@ import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDe
 import { createFolder, getFolderList, updateFolder, deleteFolder as deleteFolderApi } from '../api/folder'
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
-import { getTagList, bindTag, createTag, updateTag, deleteTag as deleteTagApi } from '../api/tag'
+import { getTagList, bindTag, createTag, updateTag } from '../api/tag'
 import { getFileList, deleteFile } from '../api/file'
 
 // 导入拆分后的组件
@@ -203,12 +203,12 @@ const expandedFolders = ref(new Set())
 // ===== 标签相关 =====
 const allTags = ref([])
 const noteTags = ref([])
+const tagsLoading = ref(false)
 const tagDialogVisible = ref(false)
 const editingTag = ref(null)
 const tagForm = ref({ name: '' })
 
 // ===== 文件管理相关 =====
-const noteFiles = ref([])
 const allFiles = ref([])
 const filesLoading = ref(false)
 
@@ -360,12 +360,15 @@ const fetchAllNotes = async () => {
 
 // ===== 获取所有标签 =====
 const fetchAllTags = async () => {
+  tagsLoading.value = true
   try {
     const data = await getTagList()
     allTags.value = Array.isArray(data) ? data : []
   } catch (error) {
     console.error('获取标签列表失败:', error)
     allTags.value = []
+  } finally {
+    tagsLoading.value = false
   }
 }
 
@@ -381,25 +384,6 @@ const fetchNoteTags = async () => {
   }
 }
 
-// ===== 获取当前笔记的文件列表 =====
-const fetchNoteFiles = async () => {
-  const noteId = editingNote.value?.id
-  
-  filesLoading.value = true
-  try {
-    if (noteId) {
-      const data = await getFileList({ note_id: Number(noteId) })
-      noteFiles.value = Array.isArray(data) ? data : []
-    } else {
-      noteFiles.value = []
-    }
-  } catch (error) {
-    console.error('获取笔记文件列表失败:', error)
-    noteFiles.value = []
-  } finally {
-    filesLoading.value = false
-  }
-}
 
 // ===== 获取用户所有文件 =====
 const fetchAllUserFiles = async () => {
@@ -416,19 +400,8 @@ const fetchAllUserFiles = async () => {
 }
 
 // ===== 刷新文件列表 =====
-const handleFileRefresh = (viewMode = 'note') => {
-  if (viewMode === 'all') {
-    fetchAllUserFiles()
-  } else {
-    fetchNoteFiles()
-  }
-}
-
-// ===== 切换文件查看模式 =====
-const handleViewModeChange = (mode) => {
-  if (mode === 'all' && allFiles.value.length === 0) {
-    fetchAllUserFiles()
-  }
+const handleFileRefresh = () => {
+  fetchAllUserFiles()
 }
 
 // ===== 搜索笔记 =====
@@ -502,7 +475,6 @@ const handleFolderClick = (folder) => {
   selectedFolderId.value = folder.id
   editingNote.value = null
   selectedNoteId.value = null
-  noteFiles.value = []
 }
 
 const handleFolderExpand = (folder) => {
@@ -546,11 +518,8 @@ const openNoteEditor = async (note) => {
     hasUnsavedChanges.value = false
     saveStatus.value = '已保存'
     
-    // 并行获取标签和文件列表
-    await Promise.all([
-      fetchNoteTags(),
-      fetchNoteFiles()
-    ])
+    // 获取标签列表
+    await fetchNoteTags()
 
     if (editingNote.value.folder_id) {
       const folder = allFolders.value.find(f => f.id === editingNote.value.folder_id)
@@ -586,20 +555,17 @@ const closeEditor = () => {
         editingNote.value = null
         selectedNoteId.value = null
         noteTags.value = []
-        noteFiles.value = []
       })
     }).catch(() => {
       hasUnsavedChanges.value = false
       editingNote.value = null
       selectedNoteId.value = null
       noteTags.value = []
-      noteFiles.value = []
     })
   } else {
     editingNote.value = null
     selectedNoteId.value = null
     noteTags.value = []
-    noteFiles.value = []
   }
 }
 
@@ -657,7 +623,6 @@ const handleDeleteNote = async () => {
     editingNote.value = null
     selectedNoteId.value = null
     noteTags.value = []
-    noteFiles.value = []
     await fetchAllNotes()
   } catch (error) {
     if (error !== 'cancel') {
@@ -762,7 +727,6 @@ const handleSaveNote = async () => {
         folder_id: newNote.folder_id || newNote.folderId
       }
       selectedNoteId.value = editingNote.value.id
-      noteFiles.value = []
       await fetchNoteTags()
     }
   } catch (error) {
@@ -771,12 +735,6 @@ const handleSaveNote = async () => {
 }
 
 // ===== 标签操作 =====
-const handleCreateTag = () => {
-  editingTag.value = null
-  tagForm.value = { name: '' }
-  tagDialogVisible.value = true
-}
-
 const handleSaveTag = async () => {
   if (!tagForm.value.name.trim()) {
     ElMessage.warning('请输入标签名称')
@@ -804,49 +762,73 @@ const handleSaveTag = async () => {
   }
 }
 
-const handleTagAction = (command, tag) => {
-  if (command === 'edit') {
-    editingTag.value = tag
-    tagForm.value = { name: tag.name }
-    tagDialogVisible.value = true
-  } else if (command === 'unbind') {
-    ElMessageBox.confirm('确定要解除该标签与当前笔记的绑定吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(async () => {
-      try {
-        const boundTagIds = noteTags.value
-          .filter(t => t.id !== tag.id)
-          .map(t => t.id)
-        await bindTag({
-          note_id: editingNote.value.id,
-          tag_ids: boundTagIds
-        })
-        ElMessage.success('标签已解除绑定')
-        await fetchNoteTags()
-      } catch (error) {
-        console.error('解除标签绑定失败:', error)
-      }
-    }).catch(() => { })
-  } else if (command === 'delete') {
-    ElMessageBox.confirm('确定要删除该标签吗？删除后所有关联的笔记将失去该标签。', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(async () => {
-      try {
-        await deleteTagApi({ tag_id: tag.id })
-        ElMessage.success('标签删除成功')
-        fetchAllTags()
-        if (editingNote.value) {
-          await fetchNoteTags()
-        }
-      } catch (error) {
-        console.error('删除标签失败:', error)
-      }
-    }).catch(() => { })
+// 行内创建标签
+const handleCreateTagInline = async (name) => {
+  try {
+    await createTag({ name })
+    ElMessage.success('标签创建成功')
+    fetchAllTags()
+    if (editingNote.value) {
+      await fetchNoteTags()
+    }
+  } catch (error) {
+    console.error('创建标签失败:', error)
   }
+}
+
+// 标签删除/解绑
+const handleTagDelete = async (tag) => {
+  ElMessageBox.confirm('确定要解除该标签与当前笔记的绑定吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      const boundTagIds = noteTags.value
+        .filter(t => t.id !== tag.id)
+        .map(t => t.id)
+      await bindTag({
+        note_id: editingNote.value.id,
+        tag_ids: boundTagIds
+      })
+      ElMessage.success('标签已解除绑定')
+      await fetchNoteTags()
+    } catch (error) {
+      console.error('解除标签绑定失败:', error)
+    }
+  }).catch(() => { })
+}
+
+const handleTagEdit = async ({ tag, newName }) => {
+  try {
+    await updateTag({ tag_id: tag.id, name: newName })
+    ElMessage.success('标签修改成功')
+    fetchAllTags()
+    if (editingNote.value) {
+      await fetchNoteTags()
+    }
+  } catch (error) {
+    console.error('修改标签失败:', error)
+  }
+}
+
+const handleTagDeleteAll = async (tag) => {
+  ElMessageBox.confirm(`确定要删除标签 "${tag.name}" 吗？删除后所有关联的笔记将失去该标签。`, '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(async () => {
+    try {
+      await deleteTagApi({ tag_id: tag.id })
+      ElMessage.success('标签删除成功')
+      fetchAllTags()
+      if (editingNote.value) {
+        await fetchNoteTags()
+      }
+    } catch (error) {
+      console.error('删除标签失败:', error)
+    }
+  }).catch(() => { })
 }
 
 const isTagBound = (tagId) => {
@@ -883,10 +865,7 @@ const handleDeleteFile = async (file) => {
   try {
     await deleteFile({ file_id: file.id })
     ElMessage.success('文件删除成功')
-    await Promise.all([
-      fetchNoteFiles(),
-      fetchAllUserFiles()
-    ])
+    await fetchAllUserFiles()
   } catch (error) {
     console.error('删除文件失败:', error)
     ElMessage.error('删除文件失败')
@@ -895,10 +874,7 @@ const handleDeleteFile = async (file) => {
 
 const handleFileUploaded = async () => {
   // 文件上传完成后刷新文件列表
-  await Promise.all([
-    fetchNoteFiles(),
-    fetchAllUserFiles()
-  ])
+  await fetchAllUserFiles()
 }
 
 // ===== 用户操作 =====
