@@ -24,6 +24,13 @@
     <!-- 空状态 -->
     <div v-else-if="!tags || tags.length === 0 && !inputVisible" class="tag-empty">
       <span>{{ emptyText }}</span>
+      <el-button
+        class="button-new-tag"
+        size="small"
+        @click="showInput"
+      >
+        + New Tag
+      </el-button>
     </div>
 
     <!-- 标签列表 -->
@@ -224,11 +231,13 @@ const handleInputConfirm = () => {
 .tag-empty {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 16px;
   color: var(--text-muted);
   font-size: 13px;
+  gap: 12px;
 }
 
 .tag-list {

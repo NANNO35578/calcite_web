@@ -22,6 +22,7 @@
           @folder-rename="handleRenameFolder"
           @folder-delete="handleDeleteFolder"
           @user-command="handleUserCommand"
+          @ocr-upload="handleOCRUpload"
         />
       </el-splitter-panel>
 
@@ -150,6 +151,7 @@ import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
 import { getTagList, bindTag, createTag, updateTag } from '../api/tag'
 import { getFileList, deleteFile } from '../api/file'
+import { recognizeOCR, pollOCRStatus } from '../api/ocr'
 
 // 导入拆分后的组件
 import LeftSidebar from '../components/sidebar/LeftSidebar.vue'
@@ -875,6 +877,54 @@ const handleDeleteFile = async (file) => {
 const handleFileUploaded = async () => {
   // 文件上传完成后刷新文件列表
   await fetchAllUserFiles()
+}
+
+// ===== OCR 识别上传 =====
+const handleOCRUpload = async (file) => {
+  try {
+    loading.value = true
+    ElMessage.info('正在上传文件进行OCR识别...')
+    const result = await recognizeOCR(file)
+    ElMessage.success('OCR任务已提交，正在后台识别...')
+
+    // 开始轮询状态
+    pollOCRStatus(result.file_id, { interval: 1500, maxAttempts: 120 })
+      .then(async (statusData) => {
+        ElMessage.success(`OCR识别完成，笔记已生成`)
+        await fetchAllNotes()
+        await fetchAllFolders()
+        if (statusData.note_id) {
+          // 自动打开生成的笔记
+          const note = allNotes.value.find(n => n.id === statusData.note_id)
+          if (note) {
+            openNoteEditor(note)
+          } else {
+            // 如果本地列表还未刷新到该笔记，直接获取详情
+            try {
+              const detail = await getNoteDetail({ note_id: statusData.note_id })
+              if (detail) {
+                openNoteEditor({ ...detail, id: detail.id || detail.note_id, folder_id: detail.folder_id || detail.folderId })
+                await fetchAllNotes()
+                await fetchAllFolders()
+              }
+            } catch (e) {
+              console.error('获取生成笔记详情失败:', e)
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('OCR处理失败:', error)
+        ElMessage.error(error.message || 'OCR识别失败')
+      })
+      .finally(() => {
+        loading.value = false
+      })
+  } catch (error) {
+    loading.value = false
+    console.error('OCR上传失败:', error)
+    ElMessage.error(error.message || 'OCR上传失败')
+  }
 }
 
 // ===== 用户操作 =====

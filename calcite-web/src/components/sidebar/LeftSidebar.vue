@@ -4,6 +4,7 @@
     <LeftToolbar 
       @create-note="$emit('create-note')" 
       @create-folder="$emit('create-folder')" 
+      @ocr-upload="$emit('ocr-upload', $event)"
     />
     
     <!-- 文件树 -->
@@ -48,7 +49,7 @@ const props = defineProps({
 })
 
 defineEmits([
-  'create-note', 'create-folder',
+  'create-note', 'create-folder', 'ocr-upload',
   'folder-click', 'folder-expand', 'folder-collapse', 'note-click',
   'folder-create', 'folder-rename', 'folder-delete',
   'user-command'
