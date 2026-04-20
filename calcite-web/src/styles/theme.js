@@ -57,25 +57,25 @@ export const darkTheme = {
   }
 }
 
-// 浅色主题 (Light)
+// 浅色主题 (Light) - Everforest Light Medium
 export const lightTheme = {
   name: 'light',
   label: '浅色',
   
   // 基础背景色
   bg: {
-    primary: '#fdf6e3',      // 主背景
-    secondary: '#f3e7c8',    // 次背景 (侧边栏)
-    tertiary: '#e6dcc4',     // 三级背景 (按钮、输入框)
-    hover: '#e6dcc4',        // 悬停背景
-    active: '#d9d3bc',       // 激活背景
+    primary: '#fdf6e3',      // 主背景 (bg0)
+    secondary: '#f4f0d9',    // 次背景 (bg1) - 侧边栏
+    tertiary: '#eae4ca',     // 三级背景 (bg2) - 按钮、输入框
+    hover: '#e1dbc5',        // 悬停背景 (bg3)
+    active: '#dcd3ba',       // 激活背景 (bg4)
   },
   
   // 文字颜色
   text: {
-    primary: '#5c6a72',      // 主文字
-    secondary: '#9da9a0',    // 次文字
-    muted: '#9da9a0',        // 弱化文字
+    primary: '#5c6a72',      // 主文字 (fg)
+    secondary: '#939f91',    // 次文字 (grey0)
+    muted: '#a8b5a0',        // 弱化文字 (更浅绿灰)
     inverse: '#fdf6e3',      // 反色文字
   },
   
@@ -89,8 +89,8 @@ export const lightTheme = {
   
   // 边框颜色
   border: {
-    primary: '#a7c080',      // 主边框
-    secondary: '#d9d3bc',    // 次边框
+    primary: '#bdc3af',      // 主边框 (bg5)
+    secondary: '#eae4ca',    // 次边框
     accent: '#7fbbb3',       // 强调边框
   },
   
@@ -99,12 +99,12 @@ export const lightTheme = {
     folder: '#a7c080',       // 文件夹图标
     note: '#7fbbb3',         // 笔记图标
     tag: {
-      bg: '#e6dcc4',
+      bg: '#eae4ca',
       bgBound: '#7fbbb3',
       text: '#5c6a72',
       textBound: '#fdf6e3',
     },
-    scrollThumb: '#d9d3bc',
+    scrollThumb: '#bdc3af',
   }
 }
 
@@ -156,6 +156,9 @@ export function themeToCSSVariables(theme) {
   vars['--component-tag-text'] = theme.component.tag.text
   vars['--component-tag-text-bound'] = theme.component.tag.textBound
   vars['--component-scroll-thumb'] = theme.component.scrollThumb
+  
+  // Markdown 编辑器背景
+  vars['--bg-md'] = theme.bg.secondary
   
   return vars
 }

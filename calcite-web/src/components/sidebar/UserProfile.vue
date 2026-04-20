@@ -9,6 +9,12 @@
           <div class="username">{{ userInfo?.username || '用户' }}</div>
           <div class="user-email">{{ userInfo?.email || '' }}</div>
         </div>
+        <div class="theme-toggle" @click.stop="toggleTheme" title="切换主题">
+          <el-icon>
+            <Sunny v-if="isDark" />
+            <Moon v-else />
+          </el-icon>
+        </div>
       </div>
       <template #dropdown>
         <el-dropdown-menu>
@@ -20,10 +26,13 @@
 </template>
 
 <script setup>
-import { User } from '@element-plus/icons-vue'
+import { User, Sunny, Moon } from '@element-plus/icons-vue'
+import { useTheme } from '../../composables/useTheme'
 
 defineProps(['userInfo'])
 defineEmits(['command'])
+
+const { isDark, toggleTheme } = useTheme()
 </script>
 
 <style scoped>
@@ -44,6 +53,24 @@ defineEmits(['command'])
 
 .user-info:hover {
   background-color: var(--bg-tertiary);
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  margin-left: 4px;
+}
+
+.theme-toggle:hover {
+  background-color: var(--bg-hover);
+  color: var(--accent-primary);
 }
 
 .user-avatar {

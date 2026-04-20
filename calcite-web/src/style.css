@@ -70,26 +70,26 @@ button:focus-visible {
   text-align: left;
 }
 
-/* 浅色模式 */
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #5c6a72;             /* 主文本 */
-    background-color: #fdf6e3;  /* 浅背景 */
-  }
+/* 浅色模式 - 手动切换 */
+:root[data-theme="light"] {
+  color: #5c6a72;             /* 主文本 */
+  background-color: #fdf6e3;  /* 浅背景 */
+}
 
-  a {
-    color: #7fbbb3;
-  }
-  a:hover {
-    color: #a7c080;
-  }
+:root[data-theme="light"] a {
+  color: #7fbbb3;
+}
 
-  button {
-    background-color: #f3e7c8;  /* 浅按钮背景 */
-    color: #5c6a72;
-    border-color: #a7c080;
-  }
-  button:hover {
-    border-color: #e69875;      /* 悬停用橙色 */
-  }
+:root[data-theme="light"] a:hover {
+  color: #a7c080;
+}
+
+:root[data-theme="light"] button {
+  background-color: #eae4ca;  /* 浅按钮背景 */
+  color: #5c6a72;
+  border-color: #bdc3af;
+}
+
+:root[data-theme="light"] button:hover {
+  border-color: #a7c080;      /* 悬停用绿色 */
 }

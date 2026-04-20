@@ -222,6 +222,38 @@
   color: var(--text-secondary) !important;
 } */
 
+/* ========== 浅色主题覆盖 ========== */
+[data-theme="light"] {
+  --bg-md: #f4f0d9;
+  --bg-primary: #fdf6e3;
+  --bg-secondary: #f4f0d9;
+  --bg-tertiary: #eae4ca;
+  --bg-hover: #e1dbc5;
+  --bg-active: #dcd3ba;
+
+  --text-primary: #5c6a72;
+  --text-secondary: #939f91;
+  --text-muted: #a8b5a0;
+  --text-inverse: #fdf6e3;
+
+  --accent-primary: #7fbbb3;
+  --accent-secondary: #a7c080;
+  --accent-warning: #e69875;
+  --accent-error: #e67e80;
+
+  --border-primary: #bdc3af;
+  --border-secondary: #eae4ca;
+  --border-accent: #7fbbb3;
+
+  --component-folder: #a7c080;
+  --component-note: #7fbbb3;
+  --component-tag-bg: #eae4ca;
+  --component-tag-bg-bound: #7fbbb3;
+  --component-tag-text: #5c6a72;
+  --component-tag-text-bound: #fdf6e3;
+  --component-scroll-thumb: #bdc3af;
+}
+
 /* 滚动条 */
 /* ::-webkit-scrollbar {
   width: 8px;

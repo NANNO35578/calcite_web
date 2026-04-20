@@ -56,35 +56,33 @@ body {
   --el-box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* 浅色模式 */
-@media (prefers-color-scheme: light) {
-  :root {
-    --el-color-primary: #7fbbb3;
-    --el-color-primary-light-3: #a7c080;
-    --el-color-primary-light-5: #83c092;
-    --el-color-primary-light-7: #a7c080;
-    --el-color-primary-light-8: #d3c6aa;
-    --el-color-primary-light-9: #e69875;
-    --el-color-primary-dark-2: #5c6a72;
-    
-    --el-bg-color: #fdf6e3;
-    --el-bg-color-page: #fdf6e3;
-    --el-text-color-primary: #5c6a72;
-    --el-text-color-regular: #5c6a72;
-    --el-text-color-secondary: #7fbbb3;
-    --el-border-color: #a7c080;
-    --el-border-color-light: #f3e7c8;
-    --el-fill-color: #f3e7c8;
-    --el-fill-color-light: #fdf6e3;
-    --el-fill-color-lighter: #fdf6e3;
-    --el-fill-color-extra-light: #fdf6e3;
-    --el-fill-color-dark: #e6dcc4;
-    --el-fill-color-darker: #d3c6aa;
-    --el-fill-color-blank: transparent;
-    
-    --el-box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-    --el-box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
-    --el-box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+/* 浅色模式 - 手动切换 */
+:root[data-theme="light"] {
+  --el-color-primary: #7fbbb3;
+  --el-color-primary-light-3: #a7c080;
+  --el-color-primary-light-5: #83c092;
+  --el-color-primary-light-7: #a7c080;
+  --el-color-primary-light-8: #d3c6aa;
+  --el-color-primary-light-9: #e69875;
+  --el-color-primary-dark-2: #5c6a72;
+  
+  --el-bg-color: #fdf6e3;
+  --el-bg-color-page: #fdf6e3;
+  --el-text-color-primary: #5c6a72;
+  --el-text-color-regular: #5c6a72;
+  --el-text-color-secondary: #7fbbb3;
+  --el-border-color: #bdc3af;
+  --el-border-color-light: #f4f0d9;
+  --el-fill-color: #f4f0d9;
+  --el-fill-color-light: #fdf6e3;
+  --el-fill-color-lighter: #fdf6e3;
+  --el-fill-color-extra-light: #fdf6e3;
+  --el-fill-color-dark: #eae4ca;
+  --el-fill-color-darker: #d3c6aa;
+  --el-fill-color-blank: transparent;
+  
+  --el-box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  --el-box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.08);
+  --el-box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>
