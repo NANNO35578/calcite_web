@@ -3,13 +3,24 @@ import { ref } from 'vue'
 import { getUserProfile } from '../api/user'
 
 /**
+ * @typedef {import('../types').UserInfo} UserInfo
+ */
+
+/**
  * 用户状态管理
+ * @returns {{
+ *   userInfo: import('vue').Ref<UserInfo | null>,
+ *   fetchUserInfo: () => Promise<void>,
+ *   clearUserInfo: () => void
+ * }}
  */
 export const useUserStore = defineStore('user', () => {
+  /** @type {import('vue').Ref<UserInfo | null>} */
   const userInfo = ref(null)
 
   const fetchUserInfo = async () => {
     try {
+      /** @type {UserInfo} */
       const data = await getUserProfile()
       userInfo.value = data
       localStorage.setItem('userInfo', JSON.stringify(data))

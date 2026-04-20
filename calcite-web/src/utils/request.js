@@ -22,11 +22,11 @@ request.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
-    // 开发环境下打印请求信息
-    if (import.meta.env.DEV) {
-      const logData = config.method?.toLowerCase() === 'get' ? config.params : config.data
-      console.log('请求:', config.method?.toUpperCase(), config.url, logData)
-    }
+    // 开发环境下打印请求信息（生产环境已移除）
+    // if (import.meta.env.DEV) {
+    //   const logData = config.method?.toLowerCase() === 'get' ? config.params : config.data
+    //   console.log('请求:', config.method?.toUpperCase(), config.url, logData)
+    // }
     return config
   },
   (error) => {
@@ -39,15 +39,15 @@ request.interceptors.response.use(
   (response) => {
     const res = response.data
     
-    // 开发环境下打印响应信息
-    if (import.meta.env.DEV) {
-      const requestParams = response.config.method?.toLowerCase() === 'get' ? response.config.params : response.config.data
-      console.log('响应:', response.config.url, '请求参数:', requestParams, '响应数据:', res)
-    }
+    // 开发环境下打印响应信息（生产环境已移除）
+    // if (import.meta.env.DEV) {
+    //   const requestParams = response.config.method?.toLowerCase() === 'get' ? response.config.params : response.config.data
+    //   console.log('响应:', response.config.url, '请求参数:', requestParams, '响应数据:', res)
+    // }
     
     // 检查响应数据格式
     if (typeof res !== 'object' || res === null) {
-      console.warn('响应数据格式异常:', res)
+      // console.warn('响应数据格式异常:', res)
       return res
     }
     

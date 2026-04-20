@@ -135,6 +135,23 @@ const handleKeyDown = (e) => {
   if (e.ctrlKey) {
     isCtrlPressed.value = true
   }
+
+  // Ctrl+S：保存笔记
+  if (e.ctrlKey && e.key === 's') {
+    e.preventDefault()
+    if (noteStore.editingNote) {
+      handleSaveNoteManual()
+    }
+  }
+
+  // Esc：返回
+  if (e.key === 'Escape') {
+    if (noteStore.previewingNote) {
+      handleClosePreview()
+    } else if (noteStore.editingNote) {
+      handleCloseEditor()
+    }
+  }
 }
 
 const handleKeyUp = (e) => {
@@ -143,9 +160,15 @@ const handleKeyUp = (e) => {
   }
 }
 
+const handleResize = () => {
+  layoutStore.updateWindowWidth(window.innerWidth)
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
+  window.addEventListener('resize', handleResize)
+  handleResize()
   userStore.fetchUserInfo()
   fileStore.fetchAllUserFiles()
 })
@@ -153,6 +176,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeyDown)
   window.removeEventListener('keyup', handleKeyUp)
+  window.removeEventListener('resize', handleResize)
 })
 
 // ===== 列表笔记点击（根据当前模式决定行为） =====

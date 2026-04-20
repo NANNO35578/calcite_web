@@ -130,7 +130,7 @@ const displayFiles = computed(() => {
 
 // 处理过滤变化
 const handleFilterChange = (value) => {
-  console.log('过滤条件:', value)
+  // 过滤逻辑已在 computed 中处理
 }
 
 // 刷新列表

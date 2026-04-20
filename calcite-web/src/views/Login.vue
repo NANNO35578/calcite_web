@@ -129,7 +129,8 @@ const goToRegister = () => {
 }
 
 .login-card {
-  width: 420px;
+  width: 90%;
+  max-width: 420px;
   background: #2d353b;
   border: 1px solid #7a8478;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
@@ -221,7 +222,7 @@ const goToRegister = () => {
   color: #a7c080;
 }
 
-@media (prefers-color-scheme: light) {
+:root[data-theme="light"] {
   .login-container {
     background: #fdf6e3;
     background-image: 
