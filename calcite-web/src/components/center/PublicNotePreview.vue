@@ -7,24 +7,24 @@
           <el-button type="text" @click="$emit('back')" :icon="ArrowLeft" class="back-btn">
           </el-button>
         </el-tooltip>
-        <span class="title-text">{{ note.title || '无标题' }}</span>
+        <span class="title-text">{{ noteStore.previewingNote?.title || '无标题' }}</span>
       </div>
       <div class="header-actions">
         <el-button
-          :type="note.is_liked ? 'primary' : 'default'"
+          :type="noteStore.previewingNote?.is_liked ? 'primary' : 'default'"
           :icon="Pointer"
           @click="handleLike"
           size="small"
         >
-          {{ note.like_count || 0 }}
+          {{ noteStore.previewingNote?.like_count || 0 }}
         </el-button>
         <el-button
-          :type="note.is_collected ? 'warning' : 'default'"
-          :icon="note.is_collected ? StarFilled : Star"
+          :type="noteStore.previewingNote?.is_collected ? 'warning' : 'default'"
+          :icon="noteStore.previewingNote?.is_collected ? StarFilled : Star"
           @click="handleCollect"
           size="small"
         >
-          {{ note.collect_count || 0 }}
+          {{ noteStore.previewingNote?.collect_count || 0 }}
         </el-button>
       </div>
     </div>
@@ -34,11 +34,11 @@
       <div class="markdown-editor-wrapper">
         <md-editor 
           ref="editorRef"
-          theme="dark"
-          :model-value="note.content"
+          :theme="themeStore.isDark ? 'dark' : 'light'"
+          :model-value="noteStore.previewingNote?.content"
           :toolbars="[]"
           :preview = "preview"
-          :show-code-row-number=true
+          :show-code-row-number =true
           :preview-theme="'cyanosis'"
           :language="'zh-CN'"
           class="markdown-editor"
@@ -54,10 +54,11 @@ import { ArrowLeft, Pointer, Star, StarFilled } from '@element-plus/icons-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { likeNote, collectNote, unlikeNote, uncollectNote } from '../../api/note'
+import { useNoteStore } from '../../stores'
+import { useTheme } from '../../composables/useTheme'
 
-const props = defineProps({
-  note: Object
-})
+const noteStore = useNoteStore()
+const themeStore = useTheme()
 
 // script 中
 const editorRef = ref(null);
@@ -65,26 +66,28 @@ onMounted(() => {
   editorRef.value?.togglePreviewOnly(true);
 });
 
-const emit = defineEmits(['back', 'update:note'])
+const emit = defineEmits(['back'])
+
+const preview = ref(true)
 
 const handleLike = async () => {
-  const note = props.note
+  const note = noteStore.previewingNote
   if (!note || !note.id) return
   try {
     if (note.is_liked) {
       await unlikeNote({ note_id: note.id })
-      emit('update:note', {
+      noteStore.previewingNote = {
         ...note,
         is_liked: false,
         like_count: Math.max(0, (note.like_count || 1) - 1)
-      })
+      }
     } else {
       await likeNote({ note_id: note.id })
-      emit('update:note', {
+      noteStore.previewingNote = {
         ...note,
         is_liked: true,
         like_count: (note.like_count || 0) + 1
-      })
+      }
     }
   } catch (error) {
     console.error('点赞操作失败:', error)
@@ -92,23 +95,23 @@ const handleLike = async () => {
 }
 
 const handleCollect = async () => {
-  const note = props.note
+  const note = noteStore.previewingNote
   if (!note || !note.id) return
   try {
     if (note.is_collected) {
       await uncollectNote({ note_id: note.id })
-      emit('update:note', {
+      noteStore.previewingNote = {
         ...note,
         is_collected: false,
         collect_count: Math.max(0, (note.collect_count || 1) - 1)
-      })
+      }
     } else {
       await collectNote({ note_id: note.id })
-      emit('update:note', {
+      noteStore.previewingNote = {
         ...note,
         is_collected: true,
         collect_count: (note.collect_count || 0) + 1
-      })
+      }
     }
   } catch (error) {
     console.error('收藏操作失败:', error)
@@ -306,14 +309,11 @@ const handleCollect = async () => {
 .markdown-editor :deep(.md-editor-preview code) {
   background-color: var(--bg-tertiary);
   color: var(--accent-primary);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 .markdown-editor :deep(.md-editor-preview pre code) {
   background-color: transparent;
   color: var(--text-primary);
-  padding: 0;
 }
 
 /* 引用块样式 */

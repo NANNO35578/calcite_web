@@ -3,21 +3,21 @@
     <div class="search-header">
       <div class="search-title">
         {{ isPublicSearch ? '公开笔记搜索结果' : '搜索结果' }}
-        <span v-if="total > 0" class="search-count">({{ total }})</span>
+        <span v-if="noteStore.searchTotal > 0" class="search-count">({{ noteStore.searchTotal }})</span>
       </div>
       <!-- 搜索分页控件 -->
-      <div v-if="total > pageSize" class="search-pagination-mini">
+      <div v-if="noteStore.searchTotal > noteStore.searchPageSize" class="search-pagination-mini">
         <el-button 
-          :disabled="from <= 0" 
-          @click.stop="$emit('prev')"
+          :disabled="noteStore.searchFrom <= 0" 
+          @click.stop="noteStore.searchPrev"
           size="small"
           :icon="ArrowLeft"
           circle
         />
-        <span class="page-info">{{ Math.floor(from / pageSize) + 1 }}/{{ Math.ceil(total / pageSize) }}</span>
+        <span class="page-info">{{ Math.floor(noteStore.searchFrom / noteStore.searchPageSize) + 1 }}/{{ Math.ceil(noteStore.searchTotal / noteStore.searchPageSize) }}</span>
         <el-button 
-          :disabled="from + pageSize >= total" 
-          @click.stop="$emit('next')"
+          :disabled="noteStore.searchFrom + noteStore.searchPageSize >= noteStore.searchTotal" 
+          @click.stop="noteStore.searchNext"
           size="small"
           :icon="ArrowRight"
           circle
@@ -26,14 +26,14 @@
     </div>
     
     <!-- 加载状态 -->
-    <div v-if="loading" class="search-loading">
+    <div v-if="noteStore.searching" class="search-loading">
       <el-skeleton :rows="3" animated />
     </div>
 
     <!-- 搜索结果列表 -->
     <template v-else>
-      <div v-for="note in results" :key="note.id" class="search-result-item"
-        :class="{ active: selectedNoteId === note.id }" @click="handleNoteClick(note)">
+      <div v-for="note in noteStore.searchResults" :key="note.id" class="search-result-item"
+        :class="{ active: noteStore.selectedNoteId === note.id }" @click="handleNoteClick(note)">
         <div class="note-content-right">
           <div class="note-title" v-html="note.highlight_title || note.title || '无标题'"></div>
           <div class="note-highlight" v-html="note.highlight_content || note.summary || '暂无摘要'"></div>
@@ -55,7 +55,7 @@
       </div>
 
       <!-- 无数据提示 -->
-      <div v-if="results.length === 0" class="empty-search">
+      <div v-if="noteStore.searchResults.length === 0" class="empty-search">
         <el-empty description="未找到匹配的笔记" :image-size="50">
           <template #description>
             <div class="empty-desc">
@@ -72,25 +72,20 @@
 <script setup>
 import { computed } from 'vue'
 import { ArrowLeft, ArrowRight, Clock, Star, User } from '@element-plus/icons-vue'
+import { useNoteStore, useUserStore } from '../../stores'
 
-const props = defineProps({
-  results: Array,
-  total: Number,
-  from: Number,
-  pageSize: Number,
-  loading: Boolean,
-  selectedNoteId: Number,
-  userId: Number
-})
+const noteStore = useNoteStore()
+const userStore = useUserStore()
 
-const emit = defineEmits(['note-click', 'public-note-click', 'prev', 'next'])
+const emit = defineEmits(['note-click', 'public-note-click'])
 
 // 通过结果中第一个元素的 author_id 是否不等于当前用户来判断是否为公开笔记搜索
 const isPublicSearch = computed(() => {
-  if (!props.results || props.results.length === 0) return false
-  const first = props.results[0]
+  const results = noteStore.searchResults
+  if (!results || results.length === 0) return false
+  const first = results[0]
   if (first.author_id === undefined) return false
-  return first.author_id !== props.userId
+  return first.author_id !== userStore.userInfo?.user_id
 })
 
 const handleNoteClick = (note) => {
@@ -126,9 +121,11 @@ const formatFullTime = (dateString) => {
 <style scoped>
 /* 从原 Home.vue 复制搜索结果相关样式 */
 .search-results {
+  flex: 1;
   padding: 8px;
   height: 100%;
-  overflow-y: auto;
+  overflow: auto;
+  scrollbar-width: none;
   min-height: 0;
 }
 

@@ -30,7 +30,7 @@
             size="small"
             :icon="Refresh"
             @click="handleRefresh"
-            :loading="loading"
+            :loading="fileStore.filesLoading"
             class="refresh-btn"
           />
         </el-tooltip>
@@ -110,55 +110,32 @@
 import { ref, computed } from 'vue'
 import { Document, Picture, Delete, CopyDocument, Refresh, Loading } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useFileStore } from '../../stores'
 
-const props = defineProps({
-  files: {
-    type: Array,
-    default: () => []
-  },
-  allFiles: {
-    type: Array,
-    default: () => []
-  },
-  noteId: {
-    type: Number,
-    default: null
-  },
-  loading: {
-    type: Boolean,
-    default: false
-  }
-})
-
-const emit = defineEmits(['delete', 'refresh'])
+const fileStore = useFileStore()
 
 // 状态过滤器
 const statusFilter = ref('')
 
 // 根据过滤条件显示对应的文件列表
 const displayFiles = computed(() => {
-  const fileList = props.allFiles
+  const fileList = fileStore.allFiles
 
   if (!statusFilter.value) {
     return fileList
   }
-
-  // if (statusFilter.value === 'current note') {
-  //   return fileList.filter(f => f.note_id === props.noteId)
-  // }
 
   return fileList.filter(f => f.status === statusFilter.value)
 })
 
 // 处理过滤变化
 const handleFilterChange = (value) => {
-  // 过滤逻辑已在 computed 中处理
   console.log('过滤条件:', value)
 }
 
 // 刷新列表
 const handleRefresh = () => {
-  emit('refresh', 'all')
+  fileStore.fetchAllUserFiles()
 }
 
 // 判断是否为图片类型
@@ -192,7 +169,6 @@ const copyUrl = async (url) => {
     await navigator.clipboard.writeText(url)
     ElMessage.success('链接已复制到剪贴板')
   } catch (err) {
-    // 降级方案
     const textarea = document.createElement('textarea')
     textarea.value = url
     textarea.style.position = 'fixed'
@@ -216,7 +192,7 @@ const handleDelete = (file) => {
       type: 'warning'
     }
   ).then(() => {
-    emit('delete', file)
+    fileStore.deleteFileAction(file)
   }).catch(() => {
     // 用户取消
   })

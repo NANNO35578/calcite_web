@@ -29,7 +29,7 @@
     </div>
     
     <!-- 底部用户信息 -->
-    <UserProfile :user-info="userInfo" @command="$emit('user-command', $event)" />
+    <UserProfile @command="$emit('user-command', $event)" />
   </div>
 </template>
 
@@ -42,8 +42,7 @@ import FileTree from '../FileTree.vue'
 const props = defineProps({
   selectedFolderId: Number,
   selectedNoteId: Number,
-  expandedFolders: Object,
-  userInfo: Object
+  expandedFolders: Object
 })
 
 defineEmits([

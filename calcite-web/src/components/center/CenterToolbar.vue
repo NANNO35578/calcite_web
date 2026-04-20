@@ -7,7 +7,7 @@
           type="default"
           size="small"
           :icon="Menu"
-          @click="$emit('toggle-left')"
+          @click="layoutStore.toggleLeft()"
           class="icon-btn"
           circle
         />
@@ -26,7 +26,7 @@
       <el-button
         size="small"
         :icon="MagicStick"
-        @click="emit('recommend')"
+        @click="noteStore.fetchRecommendNotes()"
       >
         获取推荐
       </el-button>
@@ -39,7 +39,7 @@
           type="default"
           size="small"
           :icon="InfoFilled"
-          @click="$emit('toggle-right')"
+          @click="layoutStore.toggleRight()"
           class="icon-btn"
           circle
         />
@@ -82,8 +82,10 @@
 <script setup>
 import { ref } from 'vue'
 import { Menu, Search, InfoFilled, MagicStick } from '@element-plus/icons-vue'
+import { useLayoutStore, useNoteStore } from '../../stores'
 
-const emit = defineEmits(['toggle-left', 'toggle-right', 'search', 'recommend'])
+const layoutStore = useLayoutStore()
+const noteStore = useNoteStore()
 
 const showSearchDialog = ref(false)
 const dialogKeyword = ref('')
@@ -91,7 +93,7 @@ const searchScope = ref('related')
 
 const handleSearchConfirm = () => {
   const isPublic = searchScope.value === 'public' ? 1 : undefined
-  emit('search', {
+  noteStore.setSearchKeyword({
     keyword: dialogKeyword.value.trim(),
     isPublic
   })

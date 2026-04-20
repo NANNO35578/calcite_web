@@ -9,15 +9,14 @@
           </el-button>
         </el-tooltip>
         <el-input 
-          :model-value="note.title" 
-          @update:model-value="$emit('update:title', $event)"
+          :model-value="noteStore.editingNote?.title" 
+          @update:model-value="handleTitleChange"
           placeholder="输入笔记标题..." 
           class="title-input" 
-          @input="$emit('input')" 
         />
       </div>
       <div class="header-actions">
-        <span class="save-status">{{ saveStatus }}</span>
+        <span class="save-status">{{ noteStore.saveStatus }}</span>
         <el-button type="primary" :icon="Check" @click="$emit('save')" size="small">
           保存
         </el-button>
@@ -27,8 +26,8 @@
     <div class="editor-content">
       <!-- Markdown 编辑器 -->
       <div class="markdown-editor-wrapper">
-        <md-editor theme="dark"
-          :model-value="note.content"
+        <md-editor :theme="themeStore.isDark ? 'dark' : 'light'"
+          :model-value="noteStore.editingNote?.content"
           @update:model-value="handleContentChange"
           :toolbars="toolbars"
           :preview="true"
@@ -50,14 +49,13 @@ import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ElMessage } from 'element-plus'
 import { uploadFile, pollFileStatus } from '../../api/file'
+import { useNoteStore } from '../../stores'
+import { useTheme } from '../../composables/useTheme'
 
-const props = defineProps({
-  note: Object,
-  saveStatus: String,
-  folderName: String
-})
+const noteStore = useNoteStore()
+const themeStore = useTheme()
 
-const emit = defineEmits(['update:title', 'update:content', 'input', 'back', 'save', 'file-uploaded'])
+const emit = defineEmits(['back', 'save', 'file-uploaded'])
 
 // 工具栏配置
 const toolbars = [
@@ -90,10 +88,20 @@ const toolbars = [
   'fullscreen'
 ]
 
+// 处理标题变化
+const handleTitleChange = (value) => {
+  if (noteStore.editingNote) {
+    noteStore.editingNote.title = value
+    noteStore.markUnsaved()
+  }
+}
+
 // 处理内容变化
 const handleContentChange = (value) => {
-  emit('update:content', value)
-  emit('input')
+  if (noteStore.editingNote) {
+    noteStore.editingNote.content = value
+    noteStore.markUnsaved()
+  }
 }
 
 const formatFullTime = (dateString) => {
@@ -119,7 +127,7 @@ const onUploadImg = async (files, callback) => {
         formData.append('file', file)
 
         // 关联当前笔记ID（如果存在）
-        const noteId = props.note?.id || null
+        const noteId = noteStore.editingNote?.id || null
 
         // 1. 上传文件，获取 file_id
         const uploadRes = await uploadFile(formData, noteId)
@@ -396,14 +404,12 @@ const onUploadImg = async (files, callback) => {
 .markdown-editor :deep(.md-editor-preview code) {
   background-color: var(--bg-tertiary);
   color: var(--accent-primary);
-  padding: 2px 6px;
   border-radius: 4px;
 }
 
 .markdown-editor :deep(.md-editor-preview pre code) {
   background-color: transparent;
   color: var(--text-primary);
-  padding: 0;
 }
 
 /* 引用块样式 */

@@ -5,18 +5,12 @@
 
     <!-- 文件列表面板 -->
     <div v-show="activePanel === 'files'" class="panel-container">
-      <FileList
-        :all-files="allFiles"
-        :note-id="editingNote?.id"
-        :loading="filesLoading"
-        @delete="$emit('file-delete', $event)"
-        @refresh="$emit('file-refresh')"
-      />
+      <FileList />
     </div>
 
     <!-- 笔记管理面板 -->
     <div v-show="activePanel === 'note'" class="panel-container">
-      <div v-if="!editingNote" class="empty-note">
+      <div v-if="!currentNote" class="empty-note">
         <span>未选择笔记</span>
       </div>
 
@@ -24,25 +18,25 @@
       <div v-else-if="isPreview" class="note-info-panel preview-panel">
         <!-- Header -->
         <div class="note-info-header">
-          <span class="note-title">{{ editingNote.title || '无标题' }}</span>
+          <span class="note-title">{{ currentNote.title || '无标题' }}</span>
         </div>
 
         <!-- 点赞与收藏 -->
         <div class="info-section">
           <div class="info-row">
             <span class="info-label">点赞</span>
-            <span class="info-value">{{ editingNote.like_count || 0 }}</span>
+            <span class="info-value">{{ currentNote.like_count || 0 }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">收藏</span>
-            <span class="info-value">{{ editingNote.collect_count || 0 }}</span>
+            <span class="info-value">{{ currentNote.collect_count || 0 }}</span>
           </div>
         </div>
 
         <!-- 摘要（只读） -->
         <div class="info-section">
           <div class="section-title">摘要</div>
-          <div class="preview-summary">{{ editingNote.summary || '暂无摘要' }}</div>
+          <div class="preview-summary">{{ currentNote.summary || '暂无摘要' }}</div>
         </div>
 
         <!-- 时间信息 -->
@@ -50,11 +44,11 @@
           <div class="section-title">时间</div>
           <div class="info-row">
             <span class="info-label">创建</span>
-            <span class="info-value">{{ formatTime(editingNote.created_at) }}</span>
+            <span class="info-value">{{ formatTime(currentNote.created_at) }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">更新</span>
-            <span class="info-value">{{ formatTime(editingNote.updated_at) }}</span>
+            <span class="info-value">{{ formatTime(currentNote.updated_at) }}</span>
           </div>
         </div>
 
@@ -85,7 +79,7 @@
         <div class="info-section">
           <div class="info-row">
             <span class="info-label">作者</span>
-            <span class="info-value">ID: {{ editingNote.author_id }}</span>
+            <span class="info-value">ID: {{ currentNote.author_id }}</span>
           </div>
         </div>
       </div>
@@ -94,7 +88,7 @@
       <div v-else class="note-info-panel">
         <!-- Header -->
         <div class="note-info-header">
-          <span class="note-title">{{ editingNote.title || '无标题' }}</span>
+          <span class="note-title">{{ currentNote.title || '无标题' }}</span>
         </div>
 
         <!-- 笔记基础信息 -->
@@ -102,14 +96,14 @@
           <div class="info-row">
             <span class="info-label">公开</span>
             <el-switch
-              :model-value="editingNote.is_public"
+              :model-value="currentNote.is_public"
               @update:model-value="handlePublicChange"
             />
           </div>
           <div class="info-row">
             <span class="info-label">摘要</span>
             <el-input
-              :model-value="editingNote.summary"
+              :model-value="currentNote.summary"
               @update:model-value="handleSummaryChange"
               maxlength="30"
               :rows="3"
@@ -124,9 +118,9 @@
         <div class="info-section">
           <div class="section-title">所属文件夹</div>
           <el-tree-select
-            :model-value="editingNote.folder_id"
+            :model-value="currentNote.folder_id"
             @update:model-value="handleFolderChange"
-            :data="folderTreeData"
+            :data="folderStore.folderTreeData"
             :props="{ label: 'name', value: 'id', children: 'children' }"
             check-strictly
             clearable
@@ -141,11 +135,11 @@
           <div class="section-title">时间</div>
           <div class="info-row">
             <span class="info-label">创建</span>
-            <span class="info-value">{{ formatTime(editingNote.created_at) }}</span>
+            <span class="info-value">{{ formatTime(currentNote.created_at) }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">更新</span>
-            <span class="info-value">{{ formatTime(editingNote.updated_at) }}</span>
+            <span class="info-value">{{ formatTime(currentNote.updated_at) }}</span>
           </div>
         </div>
 
@@ -205,69 +199,26 @@ import RightToolbar from './RightToolbar.vue'
 import FileList from './FileList.vue'
 import { getNoteTags, generateNoteTagsAI } from '../../api/note'
 import { ElMessage } from 'element-plus'
+import { useNoteStore, useFolderStore } from '../../stores'
 
-const props = defineProps({
-  editingNote: Object,
-  allFiles: {
-    type: Array,
-    default: () => []
-  },
-  filesLoading: {
-    type: Boolean,
-    default: false
-  },
-  allFolders: {
-    type: Array,
-    default: () => []
-  },
-  isPreview: {
-    type: Boolean,
-    default: false
-  }
-})
+const noteStore = useNoteStore()
+const folderStore = useFolderStore()
 
-const emit = defineEmits([
-  'note-field-change',
-  'delete-note',
-  'file-delete',
-  'file-refresh'
-])
+const emit = defineEmits(['delete-note'])
 
 // 当前激活的面板: 'files' 或 'note'
 const activePanel = ref('note')
+
+// 当前展示的笔记（编辑或预览）
+const currentNote = computed(() => noteStore.previewingNote || noteStore.editingNote)
+const isPreview = computed(() => !!noteStore.previewingNote)
 
 // 标签相关
 const noteTags = ref([])
 const tagsLoading = ref(false)
 
-// 将扁平文件夹列表转为树形结构
-const folderTreeData = computed(() => {
-  const list = props.allFolders || []
-  const map = new Map()
-  const roots = []
-
-  list.forEach(item => {
-    map.set(item.id, { ...item, children: [] })
-  })
-
-  map.forEach(item => {
-    if (item.parent_id && item.parent_id !== 0) {
-      const parent = map.get(item.parent_id)
-      if (parent) {
-        parent.children.push(item)
-      } else {
-        roots.push(item)
-      }
-    } else {
-      roots.push(item)
-    }
-  })
-
-  return roots
-})
-
 // 监听当前编辑笔记变化，加载标签
-watch(() => props.editingNote?.id, (newId) => {
+watch(() => currentNote.value?.id, (newId) => {
   if (newId) {
     fetchNoteTags(newId)
   } else {
@@ -289,10 +240,10 @@ const fetchNoteTags = async (noteId) => {
 }
 
 const handleRefreshTags = async () => {
-  if (!props.editingNote?.id) return
+  if (!currentNote.value?.id) return
   tagsLoading.value = true
   try {
-    const data = await generateNoteTagsAI(props.editingNote.id)
+    const data = await generateNoteTagsAI(currentNote.value.id)
     noteTags.value = Array.isArray(data) ? data : []
     ElMessage.success('标签生成成功')
   } catch (error) {
@@ -304,15 +255,15 @@ const handleRefreshTags = async () => {
 }
 
 const handlePublicChange = (val) => {
-  emit('note-field-change', { is_public: val })
+  noteStore.updateNoteField({ is_public: val })
 }
 
 const handleSummaryChange = (val) => {
-  emit('note-field-change', { summary: val })
+  noteStore.updateNoteField({ summary: val })
 }
 
 const handleFolderChange = (val) => {
-  emit('note-field-change', { folder_id: val || 0 })
+  noteStore.updateNoteField({ folder_id: val || 0 })
 }
 
 const formatTime = (dateString) => {

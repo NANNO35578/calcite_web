@@ -1,4 +1,5 @@
 import { createApp } from 'vue'
+import { createPinia } from 'pinia'
 import ElementPlus from 'element-plus'
 import { ElSplitter, ElSplitterPanel } from 'element-plus'
 import 'element-plus/dist/index.css'
@@ -12,8 +13,10 @@ import { initTheme } from './styles/theme'
 initTheme()
 
 const app = createApp(App)
+const pinia = createPinia()
 
-// 注册 Element Plus 和 Splitter 组件
+// 注册 Pinia、Element Plus 和 Splitter 组件
+app.use(pinia)
 app.use(ElementPlus)
 app.component('ElSplitter', ElSplitter)
 app.component('ElSplitterPanel', ElSplitterPanel)

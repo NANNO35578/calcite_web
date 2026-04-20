@@ -2,14 +2,14 @@
   <div class="notes-list-view">
     <!-- 内容头部：标题 + 笔记计数 -->
     <div class="content-header">
-      <h2>{{ title }}</h2>
-      <span class="note-count">{{ notes.length }} 篇笔记</span>
+      <h2>{{ noteStore.contentTitle }}</h2>
+      <span class="note-count">{{ noteStore.displayNotes.length }} 篇笔记</span>
     </div>
 
     <NoteList 
-      :notes="notes" 
-      :loading="loading"
-      :selected-note-id="selectedNoteId"
+      :notes="noteStore.displayNotes" 
+      :loading="noteStore.recommending ? noteStore.recommendLoading : noteStore.loading"
+      :selected-note-id="noteStore.selectedNoteId"
       @note-click="$emit('note-click', $event)"
     />
   </div>
@@ -17,8 +17,10 @@
 
 <script setup>
 import NoteList from './NoteList.vue'
+import { useNoteStore } from '../../stores'
 
-defineProps(['title', 'notes', 'loading', 'selectedNoteId'])
+const noteStore = useNoteStore()
+
 defineEmits(['note-click'])
 </script>
 

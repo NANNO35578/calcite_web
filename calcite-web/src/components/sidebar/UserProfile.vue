@@ -6,8 +6,8 @@
           <el-icon><User /></el-icon>
         </div>
         <div class="user-details">
-          <div class="username">{{ userInfo?.username || '用户' }}</div>
-          <div class="user-email">{{ userInfo?.email || '' }}</div>
+          <div class="username">{{ userStore.userInfo?.username || '用户' }}</div>
+          <div class="user-email">{{ userStore.userInfo?.email || '' }}</div>
         </div>
         <div class="theme-toggle" @click.stop="toggleTheme" title="切换主题">
           <el-icon>
@@ -28,8 +28,10 @@
 <script setup>
 import { User, Sunny, Moon } from '@element-plus/icons-vue'
 import { useTheme } from '../../composables/useTheme'
+import { useUserStore } from '../../stores'
 
-defineProps(['userInfo'])
+const userStore = useUserStore()
+
 defineEmits(['command'])
 
 const { isDark, toggleTheme } = useTheme()
