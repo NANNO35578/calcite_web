@@ -330,14 +330,12 @@ defineExpose({ refreshNode })
 .tree-item {
   display: flex;
   align-items: center;
-  padding: 6px 8px;
   border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.15s;
-  margin-bottom: 2px;
-  position: relative;
-  min-height: 32px;
-  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  padding: 4px 0;
 }
 
 .tree-item:hover {

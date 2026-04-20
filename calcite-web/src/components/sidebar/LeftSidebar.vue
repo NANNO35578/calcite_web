@@ -70,8 +70,19 @@ defineExpose({ fileTreeRef })
 
 .file-tree-container {
   flex: 1;
-  /* overflow-y: hidden; */
+  overflow-y: auto; 
+  overflow-x: auto;
   padding: 8px;
   min-height: 0;
+}
+
+/* 全局隐藏横向滚动条（不影响滚动功能） */
+.file-tree-container::-webkit-scrollbar {
+  height: 2px;
+  width: 6px;
+}
+.file-tree-container::-webkit-scrollbar-thumb {
+  background: var(--bg-primary);
+  border-radius: 3px;
 }
 </style>
