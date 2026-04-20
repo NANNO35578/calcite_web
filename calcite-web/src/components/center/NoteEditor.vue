@@ -3,9 +3,11 @@
     <!-- 编辑器头部 - 包含返回按钮、标题输入、保存状态和删除按钮 -->
     <div class="editor-header">
       <div class="header-left">
-        <el-button type="text" @click="$emit('back')" :icon="ArrowLeft" class="back-btn">
-          返回列表
-        </el-button>
+        <!-- 改用 el-tooltip 包裹，保留原有所有功能 -->
+        <el-tooltip content="返回" placement="bottom">
+          <el-button type="text" @click="$emit('back')" :icon="ArrowLeft" class="back-btn">
+          </el-button>
+        </el-tooltip>
         <el-input 
           :model-value="note.title" 
           @update:model-value="$emit('update:title', $event)"
@@ -216,10 +218,10 @@ const onUploadImg = async (files, callback) => {
 }
 
 .title-input :deep(.el-input__wrapper) {
-  background-color: var(--bg-tertiary);
+  /* background-color: var(--bg-tertiary); */
   box-shadow: none;
-  border: 2px solid var(--border-primary);
-  border-radius: 16px;
+  /* border: 2px solid var(--bg-tertiary); */
+  /* border-radius: 16px; */
   padding: 0 8px;
 }
 

@@ -10,9 +10,7 @@
     <!-- 文件树 -->
     <div class="file-tree-container">
       <FileTree
-        :all-folders="allFolders"
-        :folders="folders"
-        :notes="allNotes"
+        ref="fileTreeRef"
         :selected-folder-id="selectedFolderId"
         :selected-note-id="selectedNoteId"
         :expanded-folders="expandedFolders"
@@ -25,6 +23,8 @@
         @folder-rename="$emit('folder-rename', $event)"
         @folder-delete="$emit('folder-delete', $event)"
         @note-create="$emit('note-create', $event)"
+        @folders-loaded="$emit('folders-loaded', $event)"
+        @notes-loaded="$emit('notes-loaded', $event)"
       />
     </div>
     
@@ -34,14 +34,12 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import LeftToolbar from './LeftToolbar.vue'
 import UserProfile from './UserProfile.vue'
 import FileTree from '../FileTree.vue'
 
 const props = defineProps({
-  allFolders: Array,
-  folders: Array,
-  allNotes: Array,
   selectedFolderId: Number,
   selectedNoteId: Number,
   expandedFolders: Object,
@@ -52,8 +50,13 @@ defineEmits([
   'create-note', 'create-folder', 'ocr-upload',
   'folder-click', 'folder-expand', 'folder-collapse', 'note-click',
   'folder-create', 'folder-rename', 'folder-delete',
+  'folders-loaded', 'notes-loaded',
   'user-command'
 ])
+
+const fileTreeRef = ref(null)
+
+defineExpose({ fileTreeRef })
 </script>
 
 <style scoped>
@@ -67,7 +70,7 @@ defineEmits([
 
 .file-tree-container {
   flex: 1;
-  overflow-y: auto;
+  /* overflow-y: hidden; */
   padding: 8px;
   min-height: 0;
 }

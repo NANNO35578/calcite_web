@@ -8,7 +8,7 @@ nvim Readme.md
 npm create vite@latest calcite-web -- --template vue
 cd calcite-web
 npm install
-npm run dev
+npm run dev -- --host
 
 npm install axios vue-router element-plus md-editor-v3
 

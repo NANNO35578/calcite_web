@@ -5,9 +5,7 @@
       <!-- 左侧栏 - 文件浏览器 -->
       <el-splitter-panel :size="leftCollapsed ? '0px' : '20%'" :min="0" :resizable="!leftCollapsed">
         <LeftSidebar
-          :all-folders="allFolders"
-          :folders="rootFolders"
-          :all-notes="allNotes"
+          ref="leftSidebarRef"
           :selected-folder-id="selectedFolderId"
           :selected-note-id="editingNote?.id || selectedNoteId"
           :expanded-folders="expandedFolders"
@@ -23,6 +21,8 @@
           @folder-delete="handleDeleteFolder"
           @user-command="handleUserCommand"
           @ocr-upload="handleOCRUpload"
+          @folders-loaded="handleFoldersLoaded"
+          @notes-loaded="handleNotesLoaded"
         />
       </el-splitter-panel>
 
@@ -250,8 +250,8 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   window.addEventListener('keyup', handleKeyUp)
   fetchUserInfo()
-  fetchAllFolders()
-  fetchAllNotes()
+  // 文件树由 FileTree.vue 组件自行懒加载根节点数据
+  // 不再在初始化时全量请求文件夹和笔记
   fetchAllTags()
   fetchAllUserFiles()
 })
@@ -309,62 +309,87 @@ const fetchUserInfo = async () => {
   }
 }
 
-// ===== 获取所有文件夹 =====
-const fetchAllFolders = async () => {
+// ===== 获取根文件夹 =====
+const fetchRootFolders = async () => {
   try {
-    const rootData = await getFolderList({ folder_id: 0 })
-    const rootList = rootData || []
-    const allFoldersList = [...rootList]
-
-    const fetchChildFolders = async (folderList) => {
-      const newFolders = []
-      for (const folder of folderList) {
-        try {
-          const childData = await getFolderList({ folder_id: folder.id })
-          if (childData && childData.length > 0) {
-            newFolders.push(...childData)
-            allFoldersList.push(...childData)
-          }
-        } catch (e) {
-          console.error(`获取文件夹 ${folder.id} 的子文件夹失败:`, e)
-        }
-      }
-      return newFolders
-    }
-
-    let currentLevel = rootList
-    while (currentLevel.length > 0) {
-      const nextLevel = await fetchChildFolders(currentLevel)
-      if (nextLevel.length === 0) break
-      currentLevel = nextLevel
-    }
-
-    allFolders.value = allFoldersList
+    const data = await getFolderList({ folder_id: 0 })
+    const rootList = Array.isArray(data) ? data : []
+    // 只保留根级文件夹，子文件夹由懒加载逐步填充
+    allFolders.value = allFolders.value.filter(f => f.parent_id !== 0 && f.parent_id != null)
+    const existingIds = new Set(allFolders.value.map(f => f.id))
+    const newFolders = rootList.filter(f => !existingIds.has(f.id))
+    allFolders.value.push(...newFolders)
   } catch (error) {
-    console.error('获取文件夹列表失败:', error)
-    allFolders.value = []
+    console.error('获取根文件夹列表失败:', error)
   }
 }
 
-// ===== 获取所有笔记 =====
-const fetchAllNotes = async () => {
+// ===== 获取根笔记 =====
+const fetchRootNotes = async () => {
   loading.value = true
   try {
-    const data = await getNoteList()
-    allNotes.value = Array.isArray(data) ? data : []
+    const data = await getNoteList({ folder_id: 0 })
+    const rootNotes = Array.isArray(data) ? data : []
+    // 只保留根级笔记（folder_id 为 null 或 0），子文件夹笔记由懒加载填充
+    allNotes.value = allNotes.value.filter(n => n.folder_id !== 0 && n.folder_id != null)
+    const existingIds = new Set(allNotes.value.map(n => n.id))
+    const newNotes = rootNotes.filter(n => !existingIds.has(n.id))
+    allNotes.value.push(...newNotes)
   } catch (error) {
-    console.error('获取笔记列表失败:', error)
-    allNotes.value = []
+    console.error('获取根笔记列表失败:', error)
   } finally {
     loading.value = false
   }
+}
+
+// ===== 懒加载数据回写 =====
+const handleFoldersLoaded = ({ folders, parentId }) => {
+  const existingIds = new Set(allFolders.value.map(f => f.id))
+  const newFolders = folders.filter(f => !existingIds.has(f.id))
+  allFolders.value.push(...newFolders)
+}
+
+const handleNotesLoaded = ({ notes }) => {
+  const existingIds = new Set(allNotes.value.map(n => n.id))
+  const newNotes = notes.filter(n => !existingIds.has(n.id))
+  allNotes.value.push(...newNotes)
+}
+
+// ===== 刷新指定文件夹数据 =====
+const refreshFolderData = async (folderId) => {
+  try {
+    const [folders, notes] = await Promise.all([
+      getFolderList({ folder_id: folderId }),
+      getNoteList({ folder_id: folderId })
+    ])
+    handleFoldersLoaded({ folders: Array.isArray(folders) ? folders : [], parentId: folderId })
+    handleNotesLoaded({ notes: Array.isArray(notes) ? notes : [] })
+  } catch (e) {
+    console.error(`刷新文件夹 ${folderId} 数据失败:`, e)
+  }
+}
+
+// ===== 刷新文件树节点 =====
+const leftSidebarRef = ref(null)
+const refreshTreeNode = (folderId = 0) => {
+  leftSidebarRef.value?.fileTreeRef?.refreshNode?.(folderId)
+}
+
+// ===== 获取所有文件夹（废弃递归全量加载，保留函数名兼容） =====
+const fetchAllFolders = async () => {
+  await fetchRootFolders()
+}
+
+// ===== 获取所有笔记（废弃全量加载，保留函数名兼容） =====
+const fetchAllNotes = async () => {
+  await fetchRootNotes()
 }
 
 // ===== 获取所有标签 =====
 const fetchAllTags = async () => {
   tagsLoading.value = true
   try {
-    const data = await getTagList()
+    const data = await getTagList({})
     allTags.value = Array.isArray(data) ? data : []
   } catch (error) {
     console.error('获取标签列表失败:', error)
@@ -602,6 +627,11 @@ const saveCurrentNote = async () => {
     saveStatus.value = '已保存'
     await fetchAllNotes()
     await fetchAllFolders()
+    const folderId = editingNote.value?.folder_id
+    if (folderId !== undefined && folderId !== null) {
+      await refreshFolderData(folderId)
+      refreshTreeNode(folderId)
+    }
   } catch (error) {
     console.error('保存笔记失败:', error)
     saveStatus.value = '保存失败'
@@ -619,6 +649,7 @@ const handleDeleteNote = async () => {
       type: 'warning'
     })
 
+    const folderId = editingNote.value?.folder_id
     await deleteNote({ note_id: editingNote.value.id })
     ElMessage.success('笔记删除成功')
     hasUnsavedChanges.value = false
@@ -626,6 +657,10 @@ const handleDeleteNote = async () => {
     selectedNoteId.value = null
     noteTags.value = []
     await fetchAllNotes()
+    if (folderId !== undefined && folderId !== null) {
+      await refreshFolderData(folderId)
+      refreshTreeNode(folderId)
+    }
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除笔记失败:', error)
@@ -663,6 +698,9 @@ const handleDeleteFolder = (folder) => {
       }
       await fetchAllFolders()
       await fetchAllNotes()
+      const parentId = folder.parent_id ?? 0
+      await refreshFolderData(parentId)
+      refreshTreeNode(parentId)
     } catch (error) {
       console.error('删除文件夹失败:', error)
     }
@@ -691,6 +729,9 @@ const handleSaveFolder = async () => {
     }
     folderDialogVisible.value = false
     await fetchAllFolders()
+    const parentId = editingFolder.value ? editingFolder.value.parent_id : (Number(folderForm.value.parentId) || 0)
+    await refreshFolderData(parentId)
+    refreshTreeNode(parentId)
   } catch (error) {
     console.error('保存文件夹失败:', error)
   }
@@ -724,9 +765,14 @@ const handleSaveNote = async () => {
     if (newNote) {
       await fetchAllNotes()
       await fetchAllFolders()
+      const folderId = newNote.folder_id || newNote.folderId
+      if (folderId !== undefined && folderId !== null) {
+        await refreshFolderData(folderId)
+        refreshTreeNode(folderId)
+      }
       editingNote.value = {
         ...newNote,
-        folder_id: newNote.folder_id || newNote.folderId
+        folder_id: folderId
       }
       selectedNoteId.value = editingNote.value.id
       await fetchNoteTags()
@@ -893,6 +939,10 @@ const handleOCRUpload = async (file) => {
         ElMessage.success(`OCR识别完成，笔记已生成`)
         await fetchAllNotes()
         await fetchAllFolders()
+        if (statusData.folder_id !== undefined && statusData.folder_id !== null) {
+          await refreshFolderData(statusData.folder_id)
+          refreshTreeNode(statusData.folder_id)
+        }
         if (statusData.note_id) {
           // 自动打开生成的笔记
           const note = allNotes.value.find(n => n.id === statusData.note_id)
@@ -906,6 +956,11 @@ const handleOCRUpload = async (file) => {
                 openNoteEditor({ ...detail, id: detail.id || detail.note_id, folder_id: detail.folder_id || detail.folderId })
                 await fetchAllNotes()
                 await fetchAllFolders()
+                const fid = detail.folder_id || detail.folderId
+                if (fid !== undefined && fid !== null) {
+                  await refreshFolderData(fid)
+                  refreshTreeNode(fid)
+                }
               }
             } catch (e) {
               console.error('获取生成笔记详情失败:', e)
