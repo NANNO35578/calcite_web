@@ -367,7 +367,7 @@ Header: `Authorization: Bearer {token}`
 | 参数       | 类型     | 必填  | 说明              |
 | -------- | ------ | --- | --------------- |
 | keyword  | string | 是   | 搜索关键词           |
-| isPublic | int    | 否   | 有就搜索公开的         |
+| is_public | int    | 否   | 有就搜索公开的         |
 | from     | int    | 否   | 分页起始位置，默认0      |
 | size     | int    | 否   | 每页数量，默认20，最大100 |
 

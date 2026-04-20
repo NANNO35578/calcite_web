@@ -31,12 +31,9 @@
         <div class="main-content">
           <!-- 顶部工具栏：控制左右侧栏、搜索 -->
           <CenterToolbar
-            v-model:search-keyword="searchKeyword"
             @toggle-left="leftCollapsed = !leftCollapsed"
             @toggle-right="rightCollapsed = !rightCollapsed"
-            @search-input="handleSearch"
-            @search-prev="handleSearchPrev"
-            @search-next="handleSearchNext"
+            @search="handleSearchWithScope"
           />
 
           <!-- 搜索结果视图 -->
@@ -73,7 +70,7 @@
             @update:content="editingNote.content = $event"
             @input="handleNoteChange"
             @back="closeEditor"
-            @delete="handleDeleteNote"
+            @save="handleSaveNoteManual"
             @file-uploaded="handleFileUploaded"
           />
         </div>
@@ -82,17 +79,12 @@
       <!-- 右侧栏 - 标签和文件管理 -->
       <el-splitter-panel :size="rightCollapsed ? '0px' : '20%'" :min="0" :resizable="!rightCollapsed">
         <RightSidebar
-          :all-tags="allTags"
-          :note-tags="noteTags"
           :editing-note="editingNote"
           :all-files="allFiles"
           :files-loading="filesLoading"
-          :tags-loading="tagsLoading"
-          @create-tag="handleCreateTagInline"
-          @tag-click="handleTagClick"
-          @tag-delete="handleTagDelete"
-          @tag-edit="handleTagEdit"
-          @tag-delete-all="handleTagDeleteAll"
+          :all-folders="allFolders"
+          @note-field-change="handleNoteFieldChange"
+          @delete-note="handleDeleteNote"
           @file-delete="handleDeleteFile"
           @file-refresh="handleFileRefresh"
         />
@@ -116,13 +108,7 @@
       @confirm="handleSaveNote"
     />
 
-    <!-- 标签对话框 -->
-    <TagDialog
-      v-model:visible="tagDialogVisible"
-      :is-editing="!!editingTag"
-      :form="tagForm"
-      @confirm="handleSaveTag"
-    />
+
   </div>
 </template>
 
@@ -142,14 +128,12 @@ import {
   ArrowRight,
   Clock,
   Star,
-  Menu,
-  CollectionTag
+  Menu
 } from '@element-plus/icons-vue'
 import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail } from '../api/note'
 import { createFolder, getFolderList, updateFolder, deleteFolder as deleteFolderApi } from '../api/folder'
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
-import { getTagList, bindTag, createTag, updateTag } from '../api/tag'
 import { getFileList, deleteFile } from '../api/file'
 import { recognizeOCR, pollOCRStatus } from '../api/ocr'
 
@@ -162,7 +146,6 @@ import NoteListView from '../components/center/NoteListView.vue'
 import NoteEditor from '../components/center/NoteEditor.vue'
 import FolderDialog from '../components/dialogs/FolderDialog.vue'
 import NoteDialog from '../components/dialogs/NoteDialog.vue'
-import TagDialog from '../components/dialogs/TagDialog.vue'
 
 const router = useRouter()
 
@@ -174,6 +157,7 @@ const allFolders = ref([])
 const selectedFolderId = ref(null)
 const selectedNoteId = ref(null)
 const searchKeyword = ref('')
+const searchIsPublic = ref(false)
 const searchResults = ref([])
 const searchTotal = ref(0)
 const searchFrom = ref(0)
@@ -201,14 +185,6 @@ const hasUnsavedChanges = ref(false)
 
 // ===== 展开的文件夹集合 =====
 const expandedFolders = ref(new Set())
-
-// ===== 标签相关 =====
-const allTags = ref([])
-const noteTags = ref([])
-const tagsLoading = ref(false)
-const tagDialogVisible = ref(false)
-const editingTag = ref(null)
-const tagForm = ref({ name: '' })
 
 // ===== 文件管理相关 =====
 const allFiles = ref([])
@@ -252,7 +228,6 @@ onMounted(() => {
   fetchUserInfo()
   // 文件树由 FileTree.vue 组件自行懒加载根节点数据
   // 不再在初始化时全量请求文件夹和笔记
-  fetchAllTags()
   fetchAllUserFiles()
 })
 
@@ -385,33 +360,6 @@ const fetchAllNotes = async () => {
   await fetchRootNotes()
 }
 
-// ===== 获取所有标签 =====
-const fetchAllTags = async () => {
-  tagsLoading.value = true
-  try {
-    const data = await getTagList({})
-    allTags.value = Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('获取标签列表失败:', error)
-    allTags.value = []
-  } finally {
-    tagsLoading.value = false
-  }
-}
-
-// ===== 获取当前笔记的标签 =====
-const fetchNoteTags = async () => {
-  if (!editingNote.value) return
-  try {
-    const data = await getTagList({ note_id: editingNote.value.id })
-    noteTags.value = Array.isArray(data) ? data : []
-  } catch (error) {
-    console.error('获取笔记标签失败:', error)
-    noteTags.value = []
-  }
-}
-
-
 // ===== 获取用户所有文件 =====
 const fetchAllUserFiles = async () => {
   filesLoading.value = true
@@ -453,6 +401,9 @@ const doSearch = async (resetPage = true) => {
       from: searchFrom.value,
       size: searchPageSize.value
     }
+    if (searchIsPublic.value) {
+      params.is_public = 1
+    }
     const data = await searchNotes(params)
     if (Array.isArray(data)) {
       searchResults.value = data
@@ -476,7 +427,9 @@ const doSearch = async (resetPage = true) => {
   }
 }
 
-const handleSearch = () => {
+const handleSearchWithScope = ({ keyword, isPublic }) => {
+  searchKeyword.value = keyword
+  searchIsPublic.value = !!isPublic
   if (searchDebounceTimer) {
     clearTimeout(searchDebounceTimer)
   }
@@ -540,13 +493,11 @@ const openNoteEditor = async (note) => {
     editingNote.value = {
       ...data,
       id: data.id || data.note_id,  // 确保 id 字段存在
-      folder_id: data.folder_id || data.folderId
+      folder_id: data.folder_id || data.folderId,
+      is_public: !!data.is_public   // 后端返回 0/1，转为 boolean
     }
     hasUnsavedChanges.value = false
     saveStatus.value = '已保存'
-    
-    // 获取标签列表
-    await fetchNoteTags()
 
     if (editingNote.value.folder_id) {
       const folder = allFolders.value.find(f => f.id === editingNote.value.folder_id)
@@ -581,18 +532,15 @@ const closeEditor = () => {
       saveCurrentNote().then(() => {
         editingNote.value = null
         selectedNoteId.value = null
-        noteTags.value = []
       })
     }).catch(() => {
       hasUnsavedChanges.value = false
       editingNote.value = null
       selectedNoteId.value = null
-      noteTags.value = []
     })
   } else {
     editingNote.value = null
     selectedNoteId.value = null
-    noteTags.value = []
   }
 }
 
@@ -621,7 +569,9 @@ const saveCurrentNote = async () => {
       note_id: editingNote.value.id,
       title: editingNote.value.title,
       content: editingNote.value.content,
-      folder_id: editingNote.value.folder_id
+      summary: editingNote.value.summary,
+      folder_id: editingNote.value.folder_id,
+      is_public: editingNote.value.is_public
     })
     hasUnsavedChanges.value = false
     saveStatus.value = '已保存'
@@ -655,7 +605,6 @@ const handleDeleteNote = async () => {
     hasUnsavedChanges.value = false
     editingNote.value = null
     selectedNoteId.value = null
-    noteTags.value = []
     await fetchAllNotes()
     if (folderId !== undefined && folderId !== null) {
       await refreshFolderData(folderId)
@@ -755,7 +704,6 @@ const handleSaveNote = async () => {
   try {
     const result = await createNote({
       title: noteForm.value.title,
-      content: '',
       folder_id: noteForm.value.folderId
     })
     noteDialogVisible.value = false
@@ -775,137 +723,25 @@ const handleSaveNote = async () => {
         folder_id: folderId
       }
       selectedNoteId.value = editingNote.value.id
-      await fetchNoteTags()
     }
   } catch (error) {
     console.error('创建笔记失败:', error)
   }
 }
 
-// ===== 标签操作 =====
-const handleSaveTag = async () => {
-  if (!tagForm.value.name.trim()) {
-    ElMessage.warning('请输入标签名称')
-    return
-  }
-
-  try {
-    if (editingTag.value) {
-      await updateTag({
-        tag_id: editingTag.value.id,
-        name: tagForm.value.name
-      })
-      ElMessage.success('标签修改成功')
-    } else {
-      await createTag({ name: tagForm.value.name })
-      ElMessage.success('标签创建成功')
-    }
-    tagDialogVisible.value = false
-    fetchAllTags()
-    if (editingNote.value) {
-      await fetchNoteTags()
-    }
-  } catch (error) {
-    console.error('保存标签失败:', error)
-  }
-}
-
-// 行内创建标签
-const handleCreateTagInline = async (name) => {
-  try {
-    await createTag({ name })
-    ElMessage.success('标签创建成功')
-    fetchAllTags()
-    if (editingNote.value) {
-      await fetchNoteTags()
-    }
-  } catch (error) {
-    console.error('创建标签失败:', error)
-  }
-}
-
-// 标签删除/解绑
-const handleTagDelete = async (tag) => {
-  ElMessageBox.confirm('确定要解除该标签与当前笔记的绑定吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      const boundTagIds = noteTags.value
-        .filter(t => t.id !== tag.id)
-        .map(t => t.id)
-      await bindTag({
-        note_id: editingNote.value.id,
-        tag_ids: boundTagIds
-      })
-      ElMessage.success('标签已解除绑定')
-      await fetchNoteTags()
-    } catch (error) {
-      console.error('解除标签绑定失败:', error)
-    }
-  }).catch(() => { })
-}
-
-const handleTagEdit = async ({ tag, newName }) => {
-  try {
-    await updateTag({ tag_id: tag.id, name: newName })
-    ElMessage.success('标签修改成功')
-    fetchAllTags()
-    if (editingNote.value) {
-      await fetchNoteTags()
-    }
-  } catch (error) {
-    console.error('修改标签失败:', error)
-  }
-}
-
-const handleTagDeleteAll = async (tag) => {
-  ElMessageBox.confirm(`确定要删除标签 "${tag.name}" 吗？删除后所有关联的笔记将失去该标签。`, '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(async () => {
-    try {
-      await deleteTagApi({ tag_id: tag.id })
-      ElMessage.success('标签删除成功')
-      fetchAllTags()
-      if (editingNote.value) {
-        await fetchNoteTags()
-      }
-    } catch (error) {
-      console.error('删除标签失败:', error)
-    }
-  }).catch(() => { })
-}
-
-const isTagBound = (tagId) => {
-  return noteTags.value.some(t => t.id === tagId)
-}
-
-const handleTagClick = async (tag) => {
+// ===== 笔记信息面板字段变更（仅更新本地状态，不立即提交） =====
+const handleNoteFieldChange = (payload) => {
   if (!editingNote.value) return
+  Object.assign(editingNote.value, payload)
+  hasUnsavedChanges.value = true
+  saveStatus.value = '有未保存的更改...'
+}
 
-  try {
-    if (isTagBound(tag.id)) {
-      const boundTagIds = noteTags.value
-        .filter(t => t.id !== tag.id)
-        .map(t => t.id)
-      await bindTag({
-        note_id: editingNote.value.id,
-        tag_ids: boundTagIds
-      })
-    } else {
-      const boundTagIds = [...noteTags.value.map(t => t.id), tag.id]
-      await bindTag({
-        note_id: editingNote.value.id,
-        tag_ids: boundTagIds
-      })
-    }
-    await fetchNoteTags()
-  } catch (error) {
-    console.error('标签绑定操作失败:', error)
-  }
+// ===== 手动保存笔记（由 editor-header 保存按钮触发） =====
+const handleSaveNoteManual = async () => {
+  if (!editingNote.value) return
+  hasUnsavedChanges.value = true
+  await saveCurrentNote()
 }
 
 // ===== 文件操作 =====

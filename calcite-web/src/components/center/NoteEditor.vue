@@ -18,8 +18,8 @@
       </div>
       <div class="header-actions">
         <span class="save-status">{{ saveStatus }}</span>
-        <el-button type="danger" :icon="Delete" @click="$emit('delete')" size="small">
-          删除
+        <el-button type="primary" :icon="Check" @click="$emit('save')" size="small">
+          保存
         </el-button>
       </div>
     </div>
@@ -45,7 +45,7 @@
 </template>
 
 <script setup>
-import { Delete, ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Check } from '@element-plus/icons-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
 import { ElMessage } from 'element-plus'
@@ -57,7 +57,7 @@ const props = defineProps({
   folderName: String
 })
 
-const emit = defineEmits(['update:title', 'update:content', 'input', 'back', 'delete', 'file-uploaded'])
+const emit = defineEmits(['update:title', 'update:content', 'input', 'back', 'save', 'file-uploaded'])
 
 // 工具栏配置
 const toolbars = [

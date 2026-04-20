@@ -1,0 +1,40 @@
+请求: GET /note/search {keyword: 'Java', from: 0, size: 20, is_public: 1}    request.js:82
+ 请求错误: AxiosError: Network Error
+    at XMLHttpRequest.handleError (axios.js?v=1d3cc0bc:1742:19)
+(anonymous) @ request.js:82   Home.vue:421
+ 搜索笔记失败: AxiosError: Network Error
+    at XMLHttpRequest.handleError (axios.js?v=1d3cc0bc:1742:19)   note.js:72
+  GET http://172.24.105.254:5173/api/note/search?keyword=Java&from=0&size=20&is_public=1 net::ERR_CONNECTION_REFUSED   request.js:28
+ 
+ 
+ 请求: GET /note/search {keyword: '结构体', from: 0, size: 20}    request.js:82
+ 请求错误: AxiosError: Network Error
+    at XMLHttpRequest.handleError (axios.js?v=1d3cc0bc:1742:19)   Home.vue:421
+ 搜索笔记失败: AxiosError: Network Error
+    at XMLHttpRequest.handleError (axios.js?v=1d3cc0bc:1742:19)   note.js:72
+  GET http://172.24.105.254:5173/api/note/search?keyword=%E7%BB%93%E6%9E%84%E4%BD%93&from=0&size=20 net::ERR_CONNECTION_REFUSED
+dispatchXhrRequest @ axios.js?v=1d3cc0bc:1809
+xhr @ axios.js?v=1d3cc0bc:1674
+dispatchRequest @ axios.js?v=1d3cc0bc:2237
+Promise.then
+_request @ axios.js?v=1d3cc0bc:2466
+request @ axios.js?v=1d3cc0bc:2351
+wrap @ axios.js?v=1d3cc0bc:8
+(anonymous) @ note.js:72
+(anonymous) @ Home.vue:407
+(anonymous) @ Home.vue:437
+setTimeout
+(anonymous) @ Home.vue:436
+callWithErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2342
+callWithAsyncErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2349
+emit @ chunk-AQOAFTHJ.js?v=1d3cc0bc:6534
+(anonymous) @ chunk-AQOAFTHJ.js?v=1d3cc0bc:10390
+(anonymous) @ CenterToolbar.vue:87
+callWithErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2342
+callWithAsyncErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2349
+emit @ chunk-AQOAFTHJ.js?v=1d3cc0bc:6534
+(anonymous) @ chunk-AQOAFTHJ.js?v=1d3cc0bc:10390
+handleClick @ element-plus.js?v=1d3cc0bc:19889
+callWithErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2342
+callWithAsyncErrorHandling @ chunk-AQOAFTHJ.js?v=1d3cc0bc:2349
+invoker @ chunk-AQOAFTHJ.js?v=1d3cc0bc:11425

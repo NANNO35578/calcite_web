@@ -2,7 +2,7 @@ import request from '../utils/request'
 
 /**
  * 新建笔记
- * @param {Object} data - 笔记数据 { title, content, folder_id }
+ * @param {Object} data - 笔记数据 { title, folder_id }
  */
 export function createNote(data) {
   return request({
@@ -14,7 +14,7 @@ export function createNote(data) {
 
 /**
  * 更新笔记
- * @param {Object} data - 笔记数据 { note_id, title, content, folder_id }
+ * @param {Object} data - 笔记数据 { note_id, title?, content?, summary?, folder_id?, is_public? }
  */
 export function updateNote(data) {
   return request({
@@ -62,8 +62,9 @@ export function getNoteDetail(params) {
 
 /**
  * 全文搜索笔记
- * @param {Object} params - { keyword, from?, size? }
+ * @param {Object} params - { keyword, isPublic?, from?, size? }
  * @param {string} params.keyword - 搜索关键词
+ * @param {number} params.is_public - 有就搜索公开的
  * @param {number} params.from - 分页起始位置，默认0
  * @param {number} params.size - 每页条数，默认20，最大100
  */
@@ -72,5 +73,29 @@ export function searchNotes(params) {
     url: '/note/search',
     method: 'get',
     params
+  })
+}
+
+/**
+ * 获取笔记标签列表
+ * @param {number} note_id - 笔记ID
+ */
+export function getNoteTags(note_id) {
+  return request({
+    url: '/notes/tags',
+    method: 'get',
+    params: { note_id }
+  })
+}
+
+/**
+ * AI生成笔记标签
+ * @param {number} note_id - 笔记ID
+ */
+export function generateNoteTagsAI(note_id) {
+  return request({
+    url: '/notes/tags/ai',
+    method: 'post',
+    data: { note_id }
   })
 }

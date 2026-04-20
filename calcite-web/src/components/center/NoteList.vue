@@ -36,7 +36,7 @@ defineEmits(['note-click'])
 }
 
 .note-list::-webkit-scrollbar {
-  width: 8px;
+  width: 0px;
 }
 
 .note-list::-webkit-scrollbar-thumb {

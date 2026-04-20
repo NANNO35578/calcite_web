@@ -10,12 +10,12 @@
         circle
       />
     </el-tooltip>
-    <el-tooltip content="标签管理" placement="bottom">
+    <el-tooltip content="笔记信息" placement="bottom">
       <el-button
-        :type="activePanel === 'tags' ? 'primary' : 'default'"
+        :type="activePanel === 'note' ? 'primary' : 'default'"
         size="small"
-        :icon="CollectionTag"
-        @click="togglePanel('tags')"
+        :icon="InfoFilled"
+        @click="togglePanel('note')"
         class="icon-btn"
         circle
       />
@@ -24,12 +24,12 @@
 </template>
 
 <script setup>
-import { Document, CollectionTag } from '@element-plus/icons-vue'
+import { Document, InfoFilled } from '@element-plus/icons-vue'
 
 defineProps({
   activePanel: {
     type: String,
-    default: 'tags' // 'files' 或 'tags'
+    default: 'note' // 'files' 或 'note'
   }
 })
 
