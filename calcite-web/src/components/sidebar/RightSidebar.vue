@@ -19,6 +19,78 @@
       <div v-if="!editingNote" class="empty-note">
         <span>未选择笔记</span>
       </div>
+
+      <!-- 预览笔记信息面板（其他人的公开笔记） -->
+      <div v-else-if="isPreview" class="note-info-panel preview-panel">
+        <!-- Header -->
+        <div class="note-info-header">
+          <span class="note-title">{{ editingNote.title || '无标题' }}</span>
+        </div>
+
+        <!-- 点赞与收藏 -->
+        <div class="info-section">
+          <div class="info-row">
+            <span class="info-label">点赞</span>
+            <span class="info-value">{{ editingNote.like_count || 0 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">收藏</span>
+            <span class="info-value">{{ editingNote.collect_count || 0 }}</span>
+          </div>
+        </div>
+
+        <!-- 摘要（只读） -->
+        <div class="info-section">
+          <div class="section-title">摘要</div>
+          <div class="preview-summary">{{ editingNote.summary || '暂无摘要' }}</div>
+        </div>
+
+        <!-- 时间信息 -->
+        <div class="info-section">
+          <div class="section-title">时间</div>
+          <div class="info-row">
+            <span class="info-label">创建</span>
+            <span class="info-value">{{ formatTime(editingNote.created_at) }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">更新</span>
+            <span class="info-value">{{ formatTime(editingNote.updated_at) }}</span>
+          </div>
+        </div>
+
+        <!-- 标签展示（只读） -->
+        <div class="info-section">
+          <div class="section-title">
+            <span>标签</span>
+          </div>
+          <div v-if="tagsLoading" class="tags-loading">
+            <el-icon class="loading-icon"><Loading /></el-icon>
+          </div>
+          <div v-else-if="noteTags.length === 0" class="tags-empty">
+            暂无标签
+          </div>
+          <div v-else class="tags-list">
+            <el-tag
+              v-for="tag in noteTags"
+              :key="tag.id"
+              size="small"
+              class="tag-item"
+            >
+              {{ tag.name }}
+            </el-tag>
+          </div>
+        </div>
+
+        <!-- 作者信息 -->
+        <div class="info-section">
+          <div class="info-row">
+            <span class="info-label">作者</span>
+            <span class="info-value">ID: {{ editingNote.author_id }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 原有笔记信息面板（自己的笔记） -->
       <div v-else class="note-info-panel">
         <!-- Header -->
         <div class="note-info-header">
@@ -39,9 +111,10 @@
             <el-input
               :model-value="editingNote.summary"
               @update:model-value="handleSummaryChange"
-              type="textarea"
+              maxlength="30"
               :rows="3"
               placeholder="暂无摘要"
+              clearable
               size="small"
             />
           </div>
@@ -146,6 +219,10 @@ const props = defineProps({
   allFolders: {
     type: Array,
     default: () => []
+  },
+  isPreview: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -365,6 +442,17 @@ const formatTime = (dateString) => {
 .danger-section {
   padding-top: 12px;
   border-top: 1px solid var(--border-primary);
+}
+
+/* 预览面板摘要样式 */
+.preview-summary {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  padding: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  word-break: break-all;
 }
 
 /* 滚动条样式 */

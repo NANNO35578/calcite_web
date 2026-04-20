@@ -345,6 +345,7 @@ Header: `Authorization: Bearer {token}`
   "code": 0,
   "message": "获取笔记详情成功",
   "data": {
+    "author_id" : 7,
     "id": 1,
     "title": "我的第一篇笔记",
     "content": "笔记内容...",
@@ -378,7 +379,8 @@ Header: `Authorization: Bearer {token}`
   "message": "搜索成功",
   "data": [
     {
-      "id": 1,
+      "author_id" : 7,
+      "id": 2,
       "title": "我的第一篇笔记",
       "summary": "笔记摘要",
       "created_at": "2025-01-01 12:00:00",

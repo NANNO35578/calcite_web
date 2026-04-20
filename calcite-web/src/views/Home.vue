@@ -38,26 +38,36 @@
 
           <!-- 搜索结果视图 -->
           <SearchResults
-            v-if="searchKeyword && !editingNote"
+            v-if="searchKeyword && !editingNote && !previewingNote"
             :results="searchResults"
             :total="searchTotal"
             :from="searchFrom"
             :page-size="searchPageSize"
             :loading="searching"
             :selected-note-id="selectedNoteId"
+            :user-id="userInfo?.user_id"
             @note-click="handleNoteClick"
+            @public-note-click="handlePublicNoteClick"
             @prev="handleSearchPrev"
             @next="handleSearchNext"
           />
 
           <!-- 笔记列表视图 -->
           <NoteListView
-            v-else-if="!editingNote"
+            v-else-if="!editingNote && !previewingNote"
             :title="contentTitle"
             :notes="displayNotes"
             :loading="loading"
             :selected-note-id="selectedNoteId"
             @note-click="handleNoteClick"
+          />
+
+          <!-- 公开笔记预览视图 -->
+          <PublicNotePreview
+            v-else-if="previewingNote"
+            :note="previewingNote"
+            @update:note="previewingNote = $event"
+            @back="closePreview"
           />
 
           <!-- 笔记编辑视图 -->
@@ -79,7 +89,8 @@
       <!-- 右侧栏 - 标签和文件管理 -->
       <el-splitter-panel :size="rightCollapsed ? '0px' : '20%'" :min="0" :resizable="!rightCollapsed">
         <RightSidebar
-          :editing-note="editingNote"
+          :editing-note="previewingNote || editingNote"
+          :is-preview="!!previewingNote"
           :all-files="allFiles"
           :files-loading="filesLoading"
           :all-folders="allFolders"
@@ -130,7 +141,7 @@ import {
   Star,
   Menu
 } from '@element-plus/icons-vue'
-import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail } from '../api/note'
+import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail, viewNote } from '../api/note'
 import { createFolder, getFolderList, updateFolder, deleteFolder as deleteFolderApi } from '../api/folder'
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
@@ -144,6 +155,7 @@ import SearchResults from '../components/sidebar/SearchResults.vue'
 import CenterToolbar from '../components/center/CenterToolbar.vue'
 import NoteListView from '../components/center/NoteListView.vue'
 import NoteEditor from '../components/center/NoteEditor.vue'
+import PublicNotePreview from '../components/center/PublicNotePreview.vue'
 import FolderDialog from '../components/dialogs/FolderDialog.vue'
 import NoteDialog from '../components/dialogs/NoteDialog.vue'
 
@@ -162,6 +174,9 @@ const searchResults = ref([])
 const searchTotal = ref(0)
 const searchFrom = ref(0)
 const searchPageSize = ref(20)
+
+// ===== 公开笔记预览状态 =====
+const previewingNote = ref(null)
 
 // ===== 侧边栏折叠状态 =====
 const leftCollapsed = ref(localStorage.getItem('calcite:leftCollapsed') === 'true')
@@ -468,6 +483,29 @@ const handleFolderCollapse = (folder) => {
 // ===== 笔记操作 =====
 const handleNoteClick = async (note) => {
   selectedNoteId.value = note.id
+
+  // 判断是否为其他人的公开笔记
+  const currentUserId = userInfo.value?.user_id
+  if (note.author_id !== undefined && note.author_id !== currentUserId) {
+    if (hasUnsavedChanges.value) {
+      ElMessageBox.confirm('当前笔记有未保存的更改，是否保存？', '提示', {
+        confirmButtonText: '保存',
+        cancelButtonText: '放弃',
+        type: 'warning'
+      }).then(() => {
+        saveCurrentNote().then(() => {
+          handlePublicNoteClick(note)
+        })
+      }).catch(() => {
+        hasUnsavedChanges.value = false
+        handlePublicNoteClick(note)
+      })
+    } else {
+      await handlePublicNoteClick(note)
+    }
+    return
+  }
+
   if (hasUnsavedChanges.value) {
     ElMessageBox.confirm('当前笔记有未保存的更改，是否保存？', '提示', {
       confirmButtonText: '保存',
@@ -484,6 +522,33 @@ const handleNoteClick = async (note) => {
   } else {
     openNoteEditor(note)
   }
+}
+
+const handlePublicNoteClick = async (note) => {
+  loading.value = true
+  try {
+    // 调用浏览 API
+    await viewNote({ note_id: note.id })
+
+    // 获取笔记详情
+    const data = await getNoteDetail({ note_id: note.id })
+    previewingNote.value = {
+      ...data,
+      id: data.id || data.note_id,
+      folder_id: data.folder_id || data.folderId,
+      is_public: !!data.is_public
+    }
+  } catch (error) {
+    console.error('打开公开笔记预览失败:', error)
+    ElMessage.error('获取笔记详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const closePreview = () => {
+  previewingNote.value = null
+  selectedNoteId.value = null
 }
 
 const openNoteEditor = async (note) => {
@@ -543,6 +608,13 @@ const closeEditor = () => {
     selectedNoteId.value = null
   }
 }
+
+// 关闭预览时也同步清理 selectedNoteId
+watch(previewingNote, (val) => {
+  if (!val && !editingNote.value) {
+    selectedNoteId.value = null
+  }
+})
 
 const handleNoteChange = () => {
   hasUnsavedChanges.value = true

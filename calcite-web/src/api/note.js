@@ -99,3 +99,63 @@ export function generateNoteTagsAI(note_id) {
     data: { note_id }
   })
 }
+
+/**
+ * 浏览笔记
+ * @param {Object} data - { note_id }
+ */
+export function viewNote(data) {
+  return request({
+    url: '/note/view',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 点赞笔记
+ * @param {Object} data - { note_id }
+ */
+export function likeNote(data) {
+  return request({
+    url: '/note/like',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 收藏笔记
+ * @param {Object} data - { note_id }
+ */
+export function collectNote(data) {
+  return request({
+    url: '/note/collect',
+    method: 'post',
+    data
+  })
+}
+
+/**
+ * 取消点赞
+ * @param {Object} data - { note_id }
+ */
+export function unlikeNote(data) {
+  return request({
+    url: '/notes/like',
+    method: 'delete',
+    data
+  })
+}
+
+/**
+ * 取消收藏
+ * @param {Object} data - { note_id }
+ */
+export function uncollectNote(data) {
+  return request({
+    url: '/notes/collect',
+    method: 'delete',
+    data
+  })
+}

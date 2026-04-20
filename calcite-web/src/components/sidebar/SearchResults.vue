@@ -2,7 +2,7 @@
   <div class="search-results">
     <div class="search-header">
       <div class="search-title">
-        搜索结果
+        {{ isPublicSearch ? '公开笔记搜索结果' : '搜索结果' }}
         <span v-if="total > 0" class="search-count">({{ total }})</span>
       </div>
       <!-- 搜索分页控件 -->
@@ -33,7 +33,7 @@
     <!-- 搜索结果列表 -->
     <template v-else>
       <div v-for="note in results" :key="note.id" class="search-result-item"
-        :class="{ active: selectedNoteId === note.id }" @click="$emit('note-click', note)">
+        :class="{ active: selectedNoteId === note.id }" @click="handleNoteClick(note)">
         <div class="note-content-right">
           <div class="note-title" v-html="note.highlight_title || note.title || '无标题'"></div>
           <div class="note-highlight" v-html="note.highlight_content || note.summary || '暂无摘要'"></div>
@@ -41,6 +41,10 @@
             <span class="note-time" :title="formatFullTime(note.updated_at)">
               <el-icon><Clock /></el-icon>
               {{ formatTime(note.updated_at) }}
+            </span>
+            <span v-if="isPublicSearch && note.author_id !== undefined" class="note-author" title="作者">
+              <el-icon><User /></el-icon>
+              {{ note.author_id }}
             </span>
             <span v-if="note.score !== undefined" class="note-score" title="相关度">
               <el-icon><Star /></el-icon>
@@ -66,7 +70,8 @@
 </template>
 
 <script setup>
-import { ArrowLeft, ArrowRight, Clock, Star } from '@element-plus/icons-vue'
+import { computed } from 'vue'
+import { ArrowLeft, ArrowRight, Clock, Star, User } from '@element-plus/icons-vue'
 
 const props = defineProps({
   results: Array,
@@ -74,10 +79,27 @@ const props = defineProps({
   from: Number,
   pageSize: Number,
   loading: Boolean,
-  selectedNoteId: Number
+  selectedNoteId: Number,
+  userId: Number
 })
 
-defineEmits(['note-click', 'prev', 'next'])
+const emit = defineEmits(['note-click', 'public-note-click', 'prev', 'next'])
+
+// 通过结果中第一个元素的 author_id 是否不等于当前用户来判断是否为公开笔记搜索
+const isPublicSearch = computed(() => {
+  if (!props.results || props.results.length === 0) return false
+  const first = props.results[0]
+  if (first.author_id === undefined) return false
+  return first.author_id !== props.userId
+})
+
+const handleNoteClick = (note) => {
+  if (isPublicSearch.value) {
+    emit('public-note-click', note)
+  } else {
+    emit('note-click', note)
+  }
+}
 
 const formatTime = (dateString) => {
   if (!dateString) return ''
@@ -213,10 +235,14 @@ const formatFullTime = (dateString) => {
   margin-top: 4px;
 }
 
-.note-time, .note-score {
+.note-time, .note-score, .note-author {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+.note-author {
+  color: var(--accent-secondary);
 }
 
 .empty-search {
