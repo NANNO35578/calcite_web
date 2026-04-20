@@ -159,3 +159,17 @@ export function uncollectNote(data) {
     data
   })
 }
+
+/**
+ * 获取推荐笔记
+ * @param {Object} params - 查询参数 { page?, page_size? }
+ * @param {number} params.page - 页码，默认1
+ * @param {number} params.page_size - 每页数量，默认10，最大50
+ */
+export function getRecommendNotes(params) {
+  return request({
+    url: '/recommend/notes',
+    method: 'get',
+    params
+  })
+}

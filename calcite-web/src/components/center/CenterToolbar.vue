@@ -14,7 +14,7 @@
       </el-tooltip>
     </div>
 
-    <!-- 中间：搜索按钮 -->
+    <!-- 中间：搜索按钮 + 获取推荐按钮 -->
     <div class="toolbar-center">
       <el-button
         size="small"
@@ -22,6 +22,13 @@
         @click="showSearchDialog = true"
       >
         搜索
+      </el-button>
+      <el-button
+        size="small"
+        :icon="MagicStick"
+        @click="emit('recommend')"
+      >
+        获取推荐
       </el-button>
     </div>
 
@@ -74,9 +81,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import { Menu, Search, InfoFilled } from '@element-plus/icons-vue'
+import { Menu, Search, InfoFilled, MagicStick } from '@element-plus/icons-vue'
 
-const emit = defineEmits(['toggle-left', 'toggle-right', 'search'])
+const emit = defineEmits(['toggle-left', 'toggle-right', 'search', 'recommend'])
 
 const showSearchDialog = ref(false)
 const dialogKeyword = ref('')

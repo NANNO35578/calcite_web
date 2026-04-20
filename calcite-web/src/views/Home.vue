@@ -34,6 +34,7 @@
             @toggle-left="leftCollapsed = !leftCollapsed"
             @toggle-right="rightCollapsed = !rightCollapsed"
             @search="handleSearchWithScope"
+            @recommend="handleRecommend"
           />
 
           <!-- 搜索结果视图 -->
@@ -57,9 +58,9 @@
             v-else-if="!editingNote && !previewingNote"
             :title="contentTitle"
             :notes="displayNotes"
-            :loading="loading"
+            :loading="recommending ? recommendLoading : loading"
             :selected-note-id="selectedNoteId"
-            @note-click="handleNoteClick"
+            @note-click="handleListNoteClick"
           />
 
           <!-- 公开笔记预览视图 -->
@@ -141,7 +142,7 @@ import {
   Star,
   Menu
 } from '@element-plus/icons-vue'
-import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail, viewNote } from '../api/note'
+import { getNoteList, createNote, updateNote, deleteNote, searchNotes, getNoteDetail, viewNote, getRecommendNotes } from '../api/note'
 import { createFolder, getFolderList, updateFolder, deleteFolder as deleteFolderApi } from '../api/folder'
 import { getUserProfile } from '../api/user'
 import { logout } from '../api/auth'
@@ -174,6 +175,13 @@ const searchResults = ref([])
 const searchTotal = ref(0)
 const searchFrom = ref(0)
 const searchPageSize = ref(20)
+
+// ===== 推荐笔记状态 =====
+const recommending = ref(false)
+const recommendNotes = ref([])
+const recommendLoading = ref(false)
+const recommendPage = ref(1)
+const recommendPageSize = ref(10)
 
 // ===== 公开笔记预览状态 =====
 const previewingNote = ref(null)
@@ -261,6 +269,9 @@ const rootFolders = computed(() => {
 
 // ===== 显示的笔记 =====
 const displayNotes = computed(() => {
+  if (recommending.value) {
+    return recommendNotes.value
+  }
   if (searchKeyword.value) {
     return searchResults.value
   }
@@ -272,6 +283,7 @@ const displayNotes = computed(() => {
 
 // ===== 内容标题 =====
 const contentTitle = computed(() => {
+  if (recommending.value) return '推荐笔记'
   if (searchKeyword.value) return '搜索结果'
   if (selectedFolderId.value) {
     const folder = allFolders.value.find(f => f.id === selectedFolderId.value)
@@ -443,6 +455,7 @@ const doSearch = async (resetPage = true) => {
 }
 
 const handleSearchWithScope = ({ keyword, isPublic }) => {
+  recommending.value = false
   searchKeyword.value = keyword
   searchIsPublic.value = !!isPublic
   if (searchDebounceTimer) {
@@ -465,8 +478,48 @@ const handleSearchNext = () => {
   doSearch(false)
 }
 
+// ===== 获取推荐笔记 =====
+const handleRecommend = async () => {
+  // 清除搜索状态，进入推荐模式
+  searchKeyword.value = ''
+  searchResults.value = []
+  searchTotal.value = 0
+  recommending.value = true
+  recommendLoading.value = true
+  recommendPage.value = 1
+  try {
+    const data = await getRecommendNotes({
+      page: recommendPage.value,
+      page_size: recommendPageSize.value
+    })
+    if (Array.isArray(data)) {
+      recommendNotes.value = data
+    } else if (data && typeof data === 'object') {
+      recommendNotes.value = data.list || data.items || data.data || []
+    } else {
+      recommendNotes.value = []
+    }
+  } catch (error) {
+    console.error('获取推荐笔记失败:', error)
+    ElMessage.error('获取推荐笔记失败')
+    recommendNotes.value = []
+  } finally {
+    recommendLoading.value = false
+  }
+}
+
+// ===== 列表笔记点击（根据当前模式决定行为） =====
+const handleListNoteClick = (note) => {
+  if (recommending.value) {
+    handlePublicNoteClick(note)
+  } else {
+    handleNoteClick(note)
+  }
+}
+
 // ===== 文件夹操作 =====
 const handleFolderClick = (folder) => {
+  recommending.value = false
   selectedFolderId.value = folder.id
   editingNote.value = null
   selectedNoteId.value = null
@@ -760,6 +813,7 @@ const handleSaveFolder = async () => {
 
 // ===== 笔记对话框操作 =====
 const handleCreateNote = (params) => {
+  recommending.value = false
   const effectiveFolderId = params?.folder_id !== undefined
     ? params.folder_id
     : (selectedFolderId.value ?? null)
