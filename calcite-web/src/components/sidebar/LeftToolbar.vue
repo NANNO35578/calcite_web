@@ -30,6 +30,16 @@
         circle
       />
     </el-tooltip>
+      <el-tooltip content="数据概览" placement="bottom">
+      <el-button
+        type="info"
+        size="small"
+        :icon="DataLine"
+        @click="handleDashboard"
+        class="icon-btn"
+        circle
+      />
+    </el-tooltip>
     <input
       ref="fileInput"
       type="file"
@@ -42,9 +52,15 @@
 
 <script setup>
 import { ref } from 'vue'
-import { DocumentAdd, FolderAdd, Picture } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { DocumentAdd, FolderAdd, Picture, DataLine } from '@element-plus/icons-vue'
 
 const emit = defineEmits(['create-note', 'create-folder', 'ocr-upload'])
+const router = useRouter()
+
+const handleDashboard = () => {
+  router.push('/dashboard')
+}
 
 const fileInput = ref(null)
 

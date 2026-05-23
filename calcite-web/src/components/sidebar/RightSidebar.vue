@@ -176,6 +176,21 @@
           </div>
         </div>
 
+        <!-- 笔记历史 -->
+        <div class="info-section">
+          <div class="section-title">
+            <span>操作</span>
+          </div>
+          <el-button
+            type="primary"
+            :icon="Clock"
+            size="small"
+            @click="handleOpenHistory"
+          >
+            笔记历史
+          </el-button>
+        </div>
+
         <!-- 删除功能 -->
         <div class="info-section danger-section">
           <el-button
@@ -194,15 +209,16 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import { InfoFilled, Refresh, Delete, Loading } from '@element-plus/icons-vue'
+import { InfoFilled, Refresh, Delete, Loading, Clock } from '@element-plus/icons-vue'
 import RightToolbar from './RightToolbar.vue'
 import FileList from './FileList.vue'
 import { getNoteTags, generateNoteTagsAI } from '../../api/note'
 import { ElMessage } from 'element-plus'
-import { useNoteStore, useFolderStore } from '../../stores'
+import { useNoteStore, useFolderStore, useDialogStore } from '../../stores'
 
 const noteStore = useNoteStore()
 const folderStore = useFolderStore()
+const dialogStore = useDialogStore()
 
 const emit = defineEmits(['delete-note'])
 
@@ -269,6 +285,12 @@ const handleFolderChange = (val) => {
 const formatTime = (dateString) => {
   if (!dateString) return '-'
   return new Date(dateString).toLocaleString('zh-CN')
+}
+
+const handleOpenHistory = () => {
+  if (currentNote.value?.id) {
+    dialogStore.openNoteHistoryDialog(currentNote.value.id)
+  }
 }
 </script>
 

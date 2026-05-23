@@ -12,6 +12,10 @@ export const useDialogStore = defineStore('dialog', () => {
   const noteDialogVisible = ref(false)
   const noteForm = ref({ title: '', folderId: null })
 
+  // 笔记历史弹窗状态
+  const noteHistoryDialogVisible = ref(false)
+  const noteHistoryNoteId = ref(null)
+
   const openFolderDialog = (folder = null, parentId = 0) => {
     editingFolder.value = folder
     folderForm.value = {
@@ -35,15 +39,29 @@ export const useDialogStore = defineStore('dialog', () => {
     noteDialogVisible.value = false
   }
 
+  const openNoteHistoryDialog = (noteId) => {
+    noteHistoryNoteId.value = noteId
+    noteHistoryDialogVisible.value = true
+  }
+
+  const closeNoteHistoryDialog = () => {
+    noteHistoryDialogVisible.value = false
+    noteHistoryNoteId.value = null
+  }
+
   return {
     folderDialogVisible,
     editingFolder,
     folderForm,
     noteDialogVisible,
     noteForm,
+    noteHistoryDialogVisible,
+    noteHistoryNoteId,
     openFolderDialog,
     closeFolderDialog,
     openNoteDialog,
-    closeNoteDialog
+    closeNoteDialog,
+    openNoteHistoryDialog,
+    closeNoteHistoryDialog
   }
 })

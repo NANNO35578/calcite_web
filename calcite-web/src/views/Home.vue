@@ -84,6 +84,13 @@
       :all-folders="folderStore.allFolders"
       @confirm="handleSaveNote"
     />
+
+    <!-- 笔记历史对话框 -->
+    <NoteHistoryDialog
+      v-model:visible="dialogStore.noteHistoryDialogVisible"
+      :note-id="dialogStore.noteHistoryNoteId"
+      @restore-version="handleRestoreVersion"
+    />
   </div>
 </template>
 
@@ -112,6 +119,7 @@ import NoteEditor from '../components/center/NoteEditor.vue'
 import PublicNotePreview from '../components/center/PublicNotePreview.vue'
 import FolderDialog from '../components/dialogs/FolderDialog.vue'
 import NoteDialog from '../components/dialogs/NoteDialog.vue'
+import NoteHistoryDialog from '../components/dialogs/NoteHistoryDialog.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -348,6 +356,15 @@ const handleSaveNoteManual = async () => {
     }
   } catch (e) {
     // 错误已在 store 中处理
+  }
+}
+
+const handleRestoreVersion = ({ content }) => {
+  if (noteStore.editingNote) {
+    noteStore.editingNote.content = content
+    noteStore.hasUnsavedChanges = true
+    noteStore.saveStatus = '未保存'
+    ElMessage.success('已恢复到历史版本')
   }
 }
 

@@ -24,6 +24,9 @@ export const useNoteStore = defineStore('note', () => {
   const previewingNote = ref(null)
   const loading = ref(false)
 
+  // ===== 历史版本状态（Mock） =====
+  const noteHistories = ref({})
+
   // ===== 保存状态 =====
   const saveStatus = ref('已保存')
   const hasUnsavedChanges = ref(false)
@@ -84,6 +87,7 @@ export const useNoteStore = defineStore('note', () => {
       const existingIds = new Set(allNotes.value.map((n) => n.id))
       const newNotes = rootNotes.filter((n) => !existingIds.has(n.id))
       allNotes.value.push(...newNotes)
+      initMockHistories()
     } catch (error) {
       console.error('获取根笔记列表失败:', error)
     } finally {
@@ -325,6 +329,52 @@ export const useNoteStore = defineStore('note', () => {
     return folder?.name || ''
   }
 
+  // ===== 历史版本方法（Mock） =====
+  const initMockHistories = () => {
+    // 为 allNotes 的前 3 条笔记预填充 Mock 历史数据
+    const notes = allNotes.value.slice(0, 3)
+    notes.forEach((note) => {
+      if (noteHistories.value[note.id]) return
+      const list = []
+      for (let v = 1; v <= 3; v++) {
+        list.push({
+          id: `h_${note.id}_${v}`,
+          content: `这是笔记《${note.title}》的历史版本 ${v} 的 Mock 内容。`,
+          updated_at: new Date(Date.now() - v * 86400000).toISOString(),
+          version: v
+        })
+      }
+      noteHistories.value[note.id] = list
+    })
+  }
+
+  const saveCurrentVersion = (noteId) => {
+    if (!editingNote.value || editingNote.value.id !== noteId) return
+    const list = noteHistories.value[noteId] || []
+    const nextVersion = list.length > 0 ? Math.max(...list.map((h) => h.version)) + 1 : 1
+    list.push({
+      id: `h_${noteId}_${nextVersion}`,
+      content: editingNote.value.content,
+      updated_at: new Date().toISOString(),
+      version: nextVersion
+    })
+    noteHistories.value[noteId] = list
+  }
+
+  const clearNoteHistory = (noteId) => {
+    noteHistories.value[noteId] = []
+  }
+
+  const restoreNoteVersion = (noteId, historyId) => {
+    const list = noteHistories.value[noteId] || []
+    const item = list.find((h) => h.id === historyId)
+    if (item && editingNote.value && editingNote.value.id === noteId) {
+      editingNote.value.content = item.content
+      editingNote.value.updated_at = new Date().toISOString()
+      ElMessage.success('已恢复到历史版本')
+    }
+  }
+
   return {
     allNotes,
     selectedNoteId,
@@ -345,6 +395,7 @@ export const useNoteStore = defineStore('note', () => {
     recommendLoading,
     displayNotes,
     contentTitle,
+    noteHistories,
     fetchRootNotes,
     handleNotesLoaded,
     selectNote,
@@ -362,6 +413,10 @@ export const useNoteStore = defineStore('note', () => {
     searchPrev,
     searchNext,
     fetchRecommendNotes,
-    getFolderName
+    getFolderName,
+    initMockHistories,
+    saveCurrentVersion,
+    clearNoteHistory,
+    restoreNoteVersion
   }
 })

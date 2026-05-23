@@ -22,6 +22,38 @@ const routes = [
     meta: {
       requiresAuth: true
     }
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/trash',
+    name: 'Trash',
+    component: () => import('../views/TrashView.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/timeline',
+    name: 'Timeline',
+    component: () => import('../views/TimelineView.vue'),
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: {
+      requiresAuth: true
+    }
   }
 ]
 

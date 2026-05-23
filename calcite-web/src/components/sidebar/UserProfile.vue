@@ -1,6 +1,6 @@
 <template>
   <div class="sidebar-footer">
-    <el-dropdown trigger="click" @command="$emit('command', $event)">
+    <el-dropdown trigger="click" @command="handleCommand">
       <div class="user-info">
         <div class="user-avatar">
           <el-icon><User /></el-icon>
@@ -18,6 +18,10 @@
       </div>
       <template #dropdown>
         <el-dropdown-menu>
+          <el-dropdown-item command="dashboard">数据概览</el-dropdown-item>
+          <el-dropdown-item command="timeline">时间轴</el-dropdown-item>
+          <el-dropdown-item command="trash">回收站</el-dropdown-item>
+          <el-dropdown-item divided command="settings">个人中心</el-dropdown-item>
           <el-dropdown-item command="logout">退出登录</el-dropdown-item>
         </el-dropdown-menu>
       </template>
@@ -27,14 +31,30 @@
 
 <script setup>
 import { User, Sunny, Moon } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { useTheme } from '../../composables/useTheme'
 import { useUserStore } from '../../stores'
 
 const userStore = useUserStore()
+const router = useRouter()
 
-defineEmits(['command'])
+const emit = defineEmits(['command'])
 
 const { isDark, toggleTheme } = useTheme()
+
+const handleCommand = (command) => {
+  const routeMap = {
+    dashboard: '/dashboard',
+    timeline: '/timeline',
+    trash: '/trash',
+    settings: '/settings'
+  }
+  if (routeMap[command]) {
+    router.push(routeMap[command])
+  } else {
+    emit('command', command)
+  }
+}
 </script>
 
 <style scoped>
