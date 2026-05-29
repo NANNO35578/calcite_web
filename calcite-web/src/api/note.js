@@ -96,7 +96,7 @@ export function generateNoteTagsAI(note_id) {
   return request({
     url: '/notes/tags/ai',
     method: 'post',
-    data: { note_id }
+    params: { note_id }
   })
 }
 

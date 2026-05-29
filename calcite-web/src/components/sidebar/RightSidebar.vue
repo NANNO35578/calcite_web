@@ -67,7 +67,7 @@
             <el-tag
               v-for="tag in noteTags"
               :key="tag.id"
-              size="small"
+              size="medium"
               class="tag-item"
             >
               {{ tag.name }}
@@ -168,7 +168,7 @@
             <el-tag
               v-for="tag in noteTags"
               :key="tag.id"
-              size="small"
+              size="medium"
               class="tag-item"
             >
               {{ tag.name }}
@@ -410,6 +410,8 @@ const handleOpenHistory = () => {
 
 .tag-item {
   transition: all 0.2s;
+  background-color: #ffe7de;
+  color: #000;
 }
 
 .danger-section {

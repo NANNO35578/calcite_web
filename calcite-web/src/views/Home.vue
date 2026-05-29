@@ -206,6 +206,10 @@ const handleFolderClick = (folder) => {
   noteStore.selectedNoteId = null
 }
 
+const handleCreateFolder = () => {
+  dialogStore.openFolderDialog(null, folderStore.selectedFolderId ?? 0)
+}
+
 const handleFolderCreate = (folder) => {
   dialogStore.openFolderDialog(null, folder.id)
 }
